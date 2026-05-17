@@ -65,7 +65,6 @@ class DrugInteraction(Base):
         CheckConstraint("drug_a_id < drug_b_id", name="check_drug_order"),
     )
 
-## "from app.core.database import engine, Base; 
-# import app.models.models; 
-#Base.metadata.create_all(bind=engine);
-#print('Tables created successfully!')"
+
+## Check if the tables are created successfully
+## python -c "from app.core.database import engine, Base; import app.models.models; Base.metadata.create_all(bind=engine);print('Tables created successfully!')"

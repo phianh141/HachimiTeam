@@ -23,3 +23,6 @@ def get_db():
         yield db        # trả session cho endpoint dùng
     finally:
         db.close()      # dù có lỗi hay không, luôn đóng session lại
+
+## Check if the database is connected successfully
+## python -c "from app.core.database import engine; print(engine.connect()); print('Database connected successfully!')"
