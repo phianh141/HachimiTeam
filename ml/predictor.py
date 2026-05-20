@@ -7,6 +7,8 @@ import torch
 import torch.nn as nn
 from scipy.sparse import hstack
 import os
+import warnings
+warnings.filterwarnings("ignore")
 
 # predictor.py
 LIGHTGBM_DIR = Path("ml/artifacts/lightgbm")
@@ -63,7 +65,7 @@ class DDAPredictor:
             self._load_mlp()
             self.ARTIFACTS_DIR = MLP_DIR
 
-        print(f"Loaded {model_type} model from {ARTIFACTS_DIR}")
+        print(f"Loaded {model_type} model from {self.ARTIFACTS_DIR}")
 
     def _load_lightgbm(self) -> None:
         self.model = joblib.load(LIGHTGBM_DIR / "lightgbm_model.pkl")
@@ -125,6 +127,8 @@ class DDAPredictor:
 
 def get_predictor(model_type: str = DEFAULT_MODEL) -> DDAPredictor:
     global _predictor, _predictor_type
+    import os
+    os.chdir(Path(__file__).parent.parent)
 
     if _predictor is None or _predictor_type != model_type:
         _predictor = DDAPredictor(model_type)
