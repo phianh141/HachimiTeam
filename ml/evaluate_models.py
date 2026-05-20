@@ -20,7 +20,10 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import train_test_split
 
-ARTIFACTS_DIR = Path("ml/artifacts")
+# evaluate_models.py
+LIGHTGBM_DIR = Path("ml/artifacts/lightgbm")
+XGBOOST_DIR  = Path("ml/artifacts/xgboost")
+MLP_DIR      = Path("ml/artifacts/mlp")
 DATASET_PATH = Path("data/processed/dda_dataset.csv")
 REPORTS_DIR = Path("ml/reports")
 
@@ -85,9 +88,9 @@ def transform_sparse(test_df: pd.DataFrame, drug_vectorizer, disease_vectorizer)
 
 
 def evaluate_lightgbm(test_df: pd.DataFrame, y_test: np.ndarray) -> dict | None:
-    model_path = ARTIFACTS_DIR / "lightgbm_model.pkl"
-    drug_tfidf_path = ARTIFACTS_DIR / "drug_tfidf.pkl"
-    disease_tfidf_path = ARTIFACTS_DIR / "disease_tfidf.pkl"
+    model_path = LIGHTGBM_DIR / "lightgbm_model.pkl"
+    drug_tfidf_path = LIGHTGBM_DIR / "drug_tfidf.pkl"
+    disease_tfidf_path = LIGHTGBM_DIR / "disease_tfidf.pkl"
 
     if not model_path.exists():
         warnings.warn(f"LightGBM model not found at {model_path}, skipping.")
@@ -105,9 +108,9 @@ def evaluate_lightgbm(test_df: pd.DataFrame, y_test: np.ndarray) -> dict | None:
 
 
 def evaluate_xgboost(test_df: pd.DataFrame, y_test: np.ndarray) -> dict | None:
-    model_path = ARTIFACTS_DIR / "xgboost_model.pkl"
-    drug_tfidf_path = ARTIFACTS_DIR / "xgboost_drug_tfidf.pkl"
-    disease_tfidf_path = ARTIFACTS_DIR / "xgboost_disease_tfidf.pkl"
+    model_path = XGBOOST_DIR / "xgboost_model.pkl"
+    drug_tfidf_path = XGBOOST_DIR / "xgboost_drug_tfidf.pkl"
+    disease_tfidf_path = XGBOOST_DIR / "xgboost_disease_tfidf.pkl"
 
     if not model_path.exists():
         warnings.warn(f"XGBoost model not found at {model_path}, skipping.")
@@ -125,11 +128,11 @@ def evaluate_xgboost(test_df: pd.DataFrame, y_test: np.ndarray) -> dict | None:
 
 
 def evaluate_mlp(test_df: pd.DataFrame, y_test: np.ndarray) -> dict | None:
-    model_path = ARTIFACTS_DIR / "mlp_model.pth"
-    drug_tfidf_path = ARTIFACTS_DIR / "mlp_drug_tfidf.pkl"
-    disease_tfidf_path = ARTIFACTS_DIR / "mlp_disease_tfidf.pkl"
-    scaler_path = ARTIFACTS_DIR / "mlp_scaler.pkl"
-    architecture_path = ARTIFACTS_DIR / "mlp_architecture.json"
+    model_path = MLP_DIR / "mlp_model.pth"
+    drug_tfidf_path = MLP_DIR / "mlp_drug_tfidf.pkl"
+    disease_tfidf_path = MLP_DIR / "mlp_disease_tfidf.pkl"
+    scaler_path = MLP_DIR / "mlp_scaler.pkl"
+    architecture_path = MLP_DIR / "mlp_architecture.json"
 
     if not model_path.exists():
         warnings.warn(f"MLP model not found at {model_path}, skipping.")

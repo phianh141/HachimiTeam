@@ -8,7 +8,10 @@ import torch.nn as nn
 from scipy.sparse import hstack
 import os
 
-ARTIFACTS_DIR = Path("ml/artifacts")
+# predictor.py
+LIGHTGBM_DIR = Path("ml/artifacts/lightgbm")
+XGBOOST_DIR  = Path("ml/artifacts/xgboost")
+MLP_DIR      = Path("ml/artifacts/mlp")
 DEFAULT_MODEL = "lightgbm"
 INPUT_DIM = 1000
 
@@ -38,7 +41,7 @@ class DDAClassifier(nn.Module):
 
 
 class DDAPredictor:
-    def __init__(self, model_type: str = DEFAULT_MODEL):
+    def __init__(self, model_type: str = DEFAULT_MODEL, ARTIFACTS_DIR: str = None):
         if model_type not in ("lightgbm", "xgboost", "mlp"):
             raise ValueError(f"Unsupported model_type: {model_type}")
 
@@ -48,34 +51,38 @@ class DDAPredictor:
         self.disease_vectorizer = None
         self.scaler = None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.ARTIFACTS_DIR = None
 
         if model_type == "lightgbm":
             self._load_lightgbm()
+            self.ARTIFACTS_DIR = LIGHTGBM_DIR
         elif model_type == "xgboost":
             self._load_xgboost()
+            self.ARTIFACTS_DIR = XGBOOST_DIR
         else:
             self._load_mlp()
+            self.ARTIFACTS_DIR = MLP_DIR
 
         print(f"Loaded {model_type} model from {ARTIFACTS_DIR}")
 
     def _load_lightgbm(self) -> None:
-        self.model = joblib.load(ARTIFACTS_DIR / "lightgbm_model.pkl")
-        self.drug_vectorizer = joblib.load(ARTIFACTS_DIR / "drug_tfidf.pkl")
-        self.disease_vectorizer = joblib.load(ARTIFACTS_DIR / "disease_tfidf.pkl")
+        self.model = joblib.load(LIGHTGBM_DIR / "lightgbm_model.pkl")
+        self.drug_vectorizer = joblib.load(LIGHTGBM_DIR / "drug_tfidf.pkl")
+        self.disease_vectorizer = joblib.load(LIGHTGBM_DIR / "disease_tfidf.pkl")
 
     def _load_xgboost(self) -> None:
-        self.model = joblib.load(ARTIFACTS_DIR / "xgboost_model.pkl")
-        self.drug_vectorizer = joblib.load(ARTIFACTS_DIR / "xgboost_drug_tfidf.pkl")
-        self.disease_vectorizer = joblib.load(ARTIFACTS_DIR / "xgboost_disease_tfidf.pkl")
+        self.model = joblib.load(XGBOOST_DIR / "xgboost_model.pkl")
+        self.drug_vectorizer = joblib.load(XGBOOST_DIR / "xgboost_drug_tfidf.pkl")
+        self.disease_vectorizer = joblib.load(XGBOOST_DIR / "xgboost_disease_tfidf.pkl")
 
     def _load_mlp(self) -> None:
-        self.drug_vectorizer = joblib.load(ARTIFACTS_DIR / "mlp_drug_tfidf.pkl")
-        self.disease_vectorizer = joblib.load(ARTIFACTS_DIR / "mlp_disease_tfidf.pkl")
-        self.scaler = joblib.load(ARTIFACTS_DIR / "mlp_scaler.pkl")
+        self.drug_vectorizer = joblib.load(MLP_DIR / "mlp_drug_tfidf.pkl")
+        self.disease_vectorizer = joblib.load(MLP_DIR / "mlp_disease_tfidf.pkl")
+        self.scaler = joblib.load(MLP_DIR / "mlp_scaler.pkl")
 
         model = DDAClassifier(input_dim=INPUT_DIM)
         model.load_state_dict(
-            torch.load(ARTIFACTS_DIR / "mlp_model.pth", map_location=self.device)
+            torch.load(MLP_DIR / "mlp_model.pth", map_location=self.device)
         )
         model.to(self.device)
         model.eval()
@@ -127,7 +134,6 @@ def get_predictor(model_type: str = DEFAULT_MODEL) -> DDAPredictor:
 
 
 if __name__ == "__main__":
-    os.chdir(Path(__file__).parent.parent)
     pred = get_predictor("lightgbm")
     score = pred.predict_single("Aspirin", "Hypertension")
     print(f"Aspirin → Hypertension: {score:.4f}")
