@@ -16,9 +16,6 @@ ml/artifacts/
 *.joblib
 *.h5
 
-# Data (dataset thường rất nặng)
-data/raw/
-data/processed/
 
 # IDE
 .vscode/
