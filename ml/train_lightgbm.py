@@ -58,7 +58,7 @@ def build_features(df: pd.DataFrame):
 
 def train_model(X_train, y_train, X_val, y_val) -> LGBMClassifier:
     model = LGBMClassifier(
-        device="gpu",
+        device="cpu",
         gpu_platform_id=0,
         gpu_device_id=0,
         n_estimators=500,
@@ -67,6 +67,7 @@ def train_model(X_train, y_train, X_val, y_val) -> LGBMClassifier:
         max_depth=-1,
         random_state=RANDOM_STATE,
         verbose=-1,
+        n_jobs=-1,   
     )
     model.fit(
         X_train,

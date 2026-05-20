@@ -19,6 +19,8 @@ from sklearn.metrics import (
     roc_auc_score,
 )
 from sklearn.model_selection import train_test_split
+import warnings
+warnings.filterwarnings("ignore")
 
 # evaluate_models.py
 LIGHTGBM_DIR = Path("ml/artifacts/lightgbm")
@@ -62,14 +64,14 @@ def load_dataset() -> pd.DataFrame:
 
 
 def load_test_split(df: pd.DataFrame) -> pd.DataFrame:
+    # Bước 1: tách test 15%
     _, test_df = train_test_split(
         df,
-        test_size=TEST_SIZE,
+        test_size=0.15,
         random_state=RANDOM_STATE,
         stratify=df["label"],
     )
     return test_df
-
 
 def compute_metrics(y_true: np.ndarray, y_pred: np.ndarray, y_prob: np.ndarray) -> dict:
     return {
@@ -128,31 +130,32 @@ def evaluate_xgboost(test_df: pd.DataFrame, y_test: np.ndarray) -> dict | None:
 
 
 def evaluate_mlp(test_df: pd.DataFrame, y_test: np.ndarray) -> dict | None:
-    model_path = MLP_DIR / "mlp_model.pth"
-    drug_tfidf_path = MLP_DIR / "mlp_drug_tfidf.pkl"
-    disease_tfidf_path = MLP_DIR / "mlp_disease_tfidf.pkl"
-    scaler_path = MLP_DIR / "mlp_scaler.pkl"
-    architecture_path = MLP_DIR / "mlp_architecture.json"
+    model_path   = MLP_DIR / "mlp_model.pth"
+    drug_path    = MLP_DIR / "mlp_drug_tfidf.pkl"
+    disease_path = MLP_DIR / "mlp_disease_tfidf.pkl"
+    scaler_path  = MLP_DIR / "mlp_scaler.pkl"
+    arch_path    = MLP_DIR / "mlp_architecture.json"
 
-    if not model_path.exists():
-        warnings.warn(f"MLP model not found at {model_path}, skipping.")
-        return None
+    for p in [model_path, drug_path, disease_path, scaler_path]:
+        if not p.exists():
+            warnings.warn(f"MLP file not found: {p}, skipping.")
+            return None
 
-    drug_vectorizer = joblib.load(drug_tfidf_path)
-    disease_vectorizer = joblib.load(disease_tfidf_path)
-    scaler = joblib.load(scaler_path)
+    drug_vectorizer    = joblib.load(drug_path)
+    disease_vectorizer = joblib.load(disease_path)
+    scaler             = joblib.load(scaler_path)
 
     input_dim = INPUT_DIM
-    if architecture_path.exists():
-        with open(architecture_path, encoding="utf-8") as f:
+    if arch_path.exists():
+        with open(arch_path, encoding="utf-8") as f:
             architecture = json.load(f)
         input_dim = architecture.get("input_features", INPUT_DIM)
 
     sparse_features = transform_sparse(test_df, drug_vectorizer, disease_vectorizer)
-    dense_features = scaler.transform(sparse_features.toarray())
+    dense_features  = scaler.transform(sparse_features.toarray())
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = DDAClassifier(input_dim=input_dim).to(device)
+    model  = DDAClassifier(input_dim=input_dim).to(device)
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
 

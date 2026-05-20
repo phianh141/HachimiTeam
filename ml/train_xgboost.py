@@ -50,20 +50,17 @@ def build_features(df: pd.DataFrame):
 
     drug_features = drug_vectorizer.fit_transform(df["drug_name"])
     disease_features = disease_vectorizer.fit_transform(df["disease_name"])
-    
-    # Convert sang dense 
-    features = hstack([drug_features, disease_features]).toarray()
+
+    features = hstack([drug_features, disease_features])
 
     y = df["label"].values
     return features, y, drug_vectorizer, disease_vectorizer
 
 
 def train_model(X_train, y_train, X_val, y_val) -> XGBClassifier:
-    X_val_dense = X_val.toarray() if hasattr(X_val, "toarray") else X_val
-
     model = XGBClassifier(
         tree_method="hist",
-        device="cuda",
+        device="cpu",
         n_estimators=500,
         learning_rate=0.05,
         max_depth=6,
@@ -72,11 +69,12 @@ def train_model(X_train, y_train, X_val, y_val) -> XGBClassifier:
         random_state=RANDOM_STATE,
         eval_metric="auc",
         early_stopping_rounds=50,
+        n_jobs=-1,
     )
     model.fit(
         X_train,
         y_train,
-        eval_set=[(X_val_dense, y_val)],
+        eval_set=[(X_val, y_val)],
         verbose=50,
     )
     return model

@@ -16,6 +16,7 @@ ml/artifacts/
 *.joblib
 *.h5
 
+data/raw
 
 # IDE
 .vscode/
