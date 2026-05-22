@@ -11,12 +11,9 @@ __pycache__/
 *.env
 
 # ML artifacts (file model to, không cần đưa lên Git)
-ml/artifacts/
-*.pkl
-*.joblib
-*.h5
 
-data/raw
+
+data/processed
 
 # IDE
 .vscode/

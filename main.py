@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine, Base
-from app.api.routes import drugs, diseases, predict
+from app.api.routes import drugs, diseases, predict, interactions
+
+ 
 
 # Tự động tạo tables nếu chưa có
 Base.metadata.create_all(bind=engine)
@@ -37,3 +39,5 @@ def root():
         "docs": "/docs",
         "version": "1.0.0"
     }
+
+app.include_router(interactions.router)
