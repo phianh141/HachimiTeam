@@ -60,8 +60,7 @@ if %errorlevel% neq 0 (
 )
 
 ::7. Import data vào database
-<<<<<<< HEAD
-::7. Import data vào database
+
 echo.
 :ask_import
 set /p "user_choice=[?] Bạn có muốn import dữ liệu vào database không? LƯU Ý chỉ import 1 lần (y/n): "
@@ -92,37 +91,45 @@ if /i "%user_choice%"=="y" (
         goto end_import
     )
     echo [ok] DDI data imported.
-=======
-:: 7. Import data vào database
 echo.
 :ask_import
-set /p "user_choice=[?] Bạn có muốn import dữ liệu vào database dda_db không? LƯU Ý chỉ import 1 lần để tránh duplicate (y/n): "
+set /p "user_choice=[?] Bạn có muốn import dữ liệu vào database không? LƯU Ý chỉ import 1 lần (y/n): "
 
 if /i "%user_choice%"=="y" (
     echo.
-    echo Đang kiểm tra file backup...
-    
-    if not exist "data\seed_ddi.py" and "data\seed_biosnap.py" (
-        echo [!] Không tìm thấy file seed_ddi.py hay seed_biosnap.py để import.
+    if not exist "data\seed_biosnap.py" (
+        echo [!] Không tìm thấy file seed_biosnap.py.
+        goto end_import
+    )
+    if not exist "data\seed_ddi.py" (
+        echo [!] Không tìm thấy file seed_ddi.py.
         goto end_import
     )
 
-    echo Đang import dữ liệu vào container dda-postgres...
-    
-    :: Lệnh thực hiện nạp file SQL trực tiếp vào DB trong Docker
-    docker exec -i dda-postgres psql -U dda_user -d dda_db < data\seed_biosnap.py
-    docker exec -i dda-postgres psql -U dda_user -d dda_db < data\seed_ddi.py
-    
-    if %errorlevel% equ 0 (
-        echo [ok] Dữ liệu đã được import thành công!
-    ) else (
-        echo [!] Có lỗi xảy ra trong quá trình import dữ liệu.
+    echo Đang import BioSNAP data...
+    python data\seed_biosnap.py
+    if %errorlevel% neq 0 (
+        echo [!] Lỗi khi import BioSNAP data.
+        goto end_import
     )
+<<<<<<< HEAD
 >>>>>>> af27bbf (Feat:Update set_up.bat and README.md)
+=======
+    echo [ok] BioSNAP data imported.
+
+    echo Đang import DDI data...
+    python data\seed_ddi.py
+    if %errorlevel% neq 0 (
+        echo [!] Lỗi khi import DDI data.
+        goto end_import
+    )
+    echo [ok] DDI data imported.
+>>>>>>> e5bdd9f (Update)
     goto end_import
 )
 
 if /i "%user_choice%"=="n" (
+<<<<<<< HEAD
 <<<<<<< HEAD
     echo [!] Bỏ qua bước import dữ liệu.
     goto end_import
@@ -135,16 +142,18 @@ if /i "%user_choice%"=="n" (
 
 :: Nếu người dùng gõ ký tự khác ngoài y/n, bắt nhập lại
 >>>>>>> af27bbf (Feat:Update set_up.bat and README.md)
+=======
+    echo [!] Bỏ qua bước import dữ liệu.
+    goto end_import
+)
+
+>>>>>>> e5bdd9f (Update)
 echo [!] Lựa chọn không hợp lệ. Vui lòng chỉ nhập 'y' hoặc 'n'.
 goto ask_import
 
 :end_import
 echo.
 
-<<<<<<< HEAD
-=======
-
->>>>>>> af27bbf (Feat:Update set_up.bat and README.md)
 echo ======================================================
 echo    THIẾT LẬP HOÀN TẤT!
 echo ======================================================
