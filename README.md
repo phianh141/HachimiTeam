@@ -2,10 +2,6 @@ dda-backend
 
 Cách sử dụng
 1. Cài docker và bật app lên
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 3f72d3b (update)
 2. Mở file .env_sample lên đổi tên file -> .env
 3. CHỉnh sửa file này đúng theo cấu hình của máy
 4. Chạy file set_up.bat
@@ -14,18 +10,6 @@ Cách sử dụng
 7. Ctrl + c ở địa chỉ ip để mở  sau +  "/docs" để mở fast api
 8. Kiểm tra fast_api coi các chức năng chính có hoạt động không
 9. Báo lại kết quả
-<<<<<<< HEAD
-=======
-2. Chạy file set_up.bat
-3. Kiểm tra db đã up chưa chạy lệnh này "docker ps" ở terminal ide
-4. Chạy backend. Chạy lên này "uvicorn main:app --reload" ở terminal ide
-5. Ctrl + c ở địa chỉ ip để mở  sau +  "/docs" để mở fast api
-5. Kiểm tra fast_api coi các chức năng chính có hoạt động không
-6. Báo lại kết quả
->>>>>>> af27bbf (Feat:Update set_up.bat and README.md)
-=======
->>>>>>> 3f72d3b (update)
-
 Chức năng chính của backend (Có thể tự test fast_api )
 1. Dự đoán liên kết thuốc
 INPUT: 1 thuốc : 1 bệnh
@@ -43,10 +27,3 @@ OUTPUT: Kết quả tương tác giữa các cặp thuốc với nhau
 Yêu cầu: Làm tương tự chức năng trên
 
 ## Đây mới là mới là bản thửu nghiệm để hình dung làm frontend trước. Sẽ cập nhật repo liên tục sau
-
-
-
-<<<<<<< HEAD
-=======
-
->>>>>>> af27bbf (Feat:Update set_up.bat and README.md)
