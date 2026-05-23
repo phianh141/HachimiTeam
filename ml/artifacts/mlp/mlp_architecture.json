@@ -1,0 +1,54 @@
+{
+  "input_features": 1000,
+  "layers": [
+    {
+      "type": "Linear",
+      "in_features": 1000,
+      "out_features": 512
+    },
+    {
+      "type": "ReLU"
+    },
+    {
+      "type": "Dropout",
+      "p": 0.3
+    },
+    {
+      "type": "Linear",
+      "in_features": 512,
+      "out_features": 256
+    },
+    {
+      "type": "ReLU"
+    },
+    {
+      "type": "Dropout",
+      "p": 0.3
+    },
+    {
+      "type": "Linear",
+      "in_features": 256,
+      "out_features": 128
+    },
+    {
+      "type": "ReLU"
+    },
+    {
+      "type": "Dropout",
+      "p": 0.2
+    },
+    {
+      "type": "Linear",
+      "in_features": 128,
+      "out_features": 1
+    },
+    {
+      "type": "Sigmoid"
+    }
+  ],
+  "optimizer": "Adam",
+  "learning_rate": 0.001,
+  "loss": "BCELoss",
+  "epochs": 50,
+  "batch_size": 1024
+}

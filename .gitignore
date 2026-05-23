@@ -1,0 +1,26 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Môi trường & cấu hình nhạy cảm
+.env
+*.env
+
+# ML artifacts (file model to, không cần đưa lên Git)
+
+
+data/processed
+
+# IDE
+.vscode/
+.cursor/
+*.suo
+*.user
+
+# Hệ điều hành
+.DS_Store
+Thumbs.db
