@@ -1,9 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.database import engine, Base
-from app.api.routes import drugs, diseases, predict, interactions
-from app.api.routes import drugs, diseases, predict, interactions, auth
-
+from app.api.routes import drugs, diseases, predict, interactions, auth, admin
  
 
 # Tự động tạo tables nếu chưa có
@@ -43,3 +41,4 @@ def root():
 
 app.include_router(interactions.router)
 app.include_router(auth.router)
+app.include_router(admin.router)

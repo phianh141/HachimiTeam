@@ -110,6 +110,9 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
 
 # =============================================
 # PREDICTION HISTORY SCHEMAS
@@ -119,7 +122,10 @@ class PredictionHistoryResponse(BaseModel):
     id: int
     drug_id: int
     disease_id: int
+    drug_name: str
+    disease_name: str
     score: float
+    confidence: str
     model_version: str
     created_at: Optional[datetime] = None
 
