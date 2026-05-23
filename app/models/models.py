@@ -65,6 +65,28 @@ class DrugInteraction(Base):
         CheckConstraint("drug_a_id < drug_b_id", name="check_drug_order"),
     )
 
+class User(Base):
+    __tablename__ = "users"
+
+    user_id    = Column(Integer, primary_key=True, index=True)
+    username   = Column(String(100), nullable=False, unique=True)
+    email      = Column(String(255), nullable=False, unique=True)
+    password   = Column(String(255), nullable=False)  # lưu hashed password
+    role       = Column(String(20), default="user")   # "user" hoặc "admin"
+    is_active  = Column(SmallInteger, default=1)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+
+
+class PredictionHistory(Base):
+    __tablename__ = "prediction_history"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    user_id       = Column(Integer, nullable=False)
+    drug_id       = Column(Integer, nullable=False)
+    disease_id    = Column(Integer, nullable=False)
+    score         = Column(Float, nullable=False)
+    model_version = Column(String(50), default="lightgbm-v1.0")
+    created_at    = Column(TIMESTAMP, server_default=func.now())
 
 ## Check if the tables are created successfully
 ## python -c "from app.core.database import engine, Base; import app.models.models; Base.metadata.create_all(bind=engine);print('Tables created successfully!')"

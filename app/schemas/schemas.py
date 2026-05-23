@@ -78,3 +78,50 @@ class Top5Response(BaseModel):
     disease_id: int
     disease_name: str
     top_drugs: list[TopDrugItem]
+
+# =============================================
+# AUTH SCHEMAS
+# =============================================
+
+class UserRegister(BaseModel):
+    username: str
+    email: str
+    password: str
+
+
+class UserResponse(BaseModel):
+    user_id: int
+    username: str
+    email: str
+    role: str
+    is_active: int
+
+    class Config:
+        from_attributes = True
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+# =============================================
+# PREDICTION HISTORY SCHEMAS
+# =============================================
+
+class PredictionHistoryResponse(BaseModel):
+    id: int
+    drug_id: int
+    disease_id: int
+    score: float
+    model_version: str
+    created_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

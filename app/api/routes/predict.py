@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi.security import HTTPBearer
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.models.models import Drug, Disease, PredictionScore
+from app.core.security import decode_access_token
+from app.models.models import Drug, Disease, PredictionScore, PredictionHistory
 from app.schemas.schemas import (
     PredictSingleRequest,
     PredictSingleResponse,
@@ -24,7 +26,8 @@ def score_to_confidence(score: float) -> str:
 @router.post("/single", response_model=PredictSingleResponse)
 def predict_single(
     request: PredictSingleRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    credentials=Security(HTTPBearer(auto_error=False))
 ):
     """F1 — Dự đoán xác suất liên kết của một cặp thuốc-bệnh"""
     drug = db.query(Drug).filter(Drug.drug_id == request.drug_id).first()
@@ -35,7 +38,6 @@ def predict_single(
     if not disease:
         raise HTTPException(status_code=404, detail="Không tìm thấy bệnh")
 
-    # Kiểm tra cache trước
     cached = db.query(PredictionScore).filter(
         PredictionScore.drug_id == request.drug_id,
         PredictionScore.disease_id == request.disease_id
@@ -44,11 +46,8 @@ def predict_single(
     if cached:
         score = cached.score
     else:
-        # Gọi ML model thật
         predictor = get_predictor("lightgbm")
         score = predictor.predict_single(drug.drug_name, disease.disease_name)
-
-        # Lưu vào cache
         db.add(PredictionScore(
             drug_id=request.drug_id,
             disease_id=request.disease_id,
@@ -56,6 +55,19 @@ def predict_single(
             model_version="lightgbm-v1.0"
         ))
         db.commit()
+
+    # Lưu history nếu user đã đăng nhập
+    if credentials:
+        payload = decode_access_token(credentials.credentials)
+        if payload:
+            db.add(PredictionHistory(
+                user_id=int(payload["sub"]),
+                drug_id=request.drug_id,
+                disease_id=request.disease_id,
+                score=score,
+                model_version="lightgbm-v1.0"
+            ))
+            db.commit()
 
     return PredictSingleResponse(
         drug_id=drug.drug_id,
@@ -72,15 +84,14 @@ def get_top5(
     disease_id: int,
     db: Session = Depends(get_db)
 ):
+    """F2 — Trả về Top 5 thuốc có xác suất cao nhất cho một bệnh"""
     disease = db.query(Disease).filter(Disease.disease_id == disease_id).first()
     if not disease:
         raise HTTPException(status_code=404, detail="Không tìm thấy bệnh")
 
-    # Đếm tổng số drugs trong DB
     total_drugs = db.query(Drug).count()
-    k = min(5, total_drugs)  # top k = 5 hoặc ít hơn nếu DB ít drugs
+    k = min(5, total_drugs)
 
-    # Kiểm tra cache có đủ k kết quả không
     cached = db.query(PredictionScore, Drug)\
                .join(Drug, PredictionScore.drug_id == Drug.drug_id)\
                .filter(PredictionScore.disease_id == disease_id)\
@@ -88,7 +99,6 @@ def get_top5(
                .limit(k).all()
 
     if len(cached) >= k:
-        # Cache đủ → dùng luôn
         top_drugs = [
             TopDrugItem(
                 drug_id=drug.drug_id,
@@ -99,14 +109,11 @@ def get_top5(
             for ps, drug in cached
         ]
     else:
-        # Cache chưa đủ → batch predict tất cả drugs
         all_drugs = db.query(Drug).all()
         predictor = get_predictor("lightgbm")
-
         drug_names = [d.drug_name for d in all_drugs]
         scores = predictor.predict_batch(drug_names, disease.disease_name)
 
-        # Lưu tất cả vào cache
         cached_drug_ids = {ps.drug_id for ps, _ in cached}
         for drug, score in zip(all_drugs, scores):
             if drug.drug_id not in cached_drug_ids:
@@ -118,7 +125,6 @@ def get_top5(
                 ))
         db.commit()
 
-        # Sort và lấy top k
         drug_scores = sorted(
             zip(all_drugs, scores),
             key=lambda x: x[1],
