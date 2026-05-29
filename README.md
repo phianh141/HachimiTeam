@@ -325,10 +325,27 @@ Admin  → tất cả quyền User + /admin/* routes
 ---
 
 ## Tài khoản test
+## Chạy lệnh này để tạo acc admin
+python -c "
+import sys
+sys.path.append('.')
+from app.core.database import SessionLocal
+from app.core.security import hash_password
+from app.models.models import User
 
-| Role | Email          | Password |
-|------|----------------|----------|
-| Admin | admin@dda.com | admin123 |
+db = SessionLocal()
+admin = User(
+    username='superadmin',
+    email='admin@dda.com',
+    password=hash_password('admin123'),
+    role='admin',
+    is_active=1
+)
+db.add(admin)
+db.commit()
+print('Admin created!')
+db.close()
+"
 
 > Tạo tài khoản user thường qua `POST /auth/register`
 
