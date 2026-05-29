@@ -2,8 +2,10 @@
 
 from pathlib import Path
 
+import numpy as np
 import joblib
 import torch
+from sentence_transformers import SentenceTransformer
 import torch.nn as nn
 from scipy.sparse import hstack
 import os
@@ -14,7 +16,8 @@ warnings.filterwarnings("ignore")
 LIGHTGBM_DIR = Path("ml/artifacts/lightgbm")
 XGBOOST_DIR  = Path("ml/artifacts/xgboost")
 MLP_DIR      = Path("ml/artifacts/mlp")
-DEFAULT_MODEL = "lightgbm"
+BIOBERT_DIR = Path("ml/artifacts/biobert")
+DEFAULT_MODEL = "biobert"
 INPUT_DIM = 1000
 
 _predictor: "DDAPredictor | None" = None
@@ -44,7 +47,7 @@ class DDAClassifier(nn.Module):
 
 class DDAPredictor:
     def __init__(self, model_type: str = DEFAULT_MODEL, ARTIFACTS_DIR: str = None):
-        if model_type not in ("lightgbm", "xgboost", "mlp"):
+        if model_type not in ("lightgbm", "xgboost", "mlp", "biobert"):
             raise ValueError(f"Unsupported model_type: {model_type}")
 
         self.model_type = model_type
@@ -52,6 +55,7 @@ class DDAPredictor:
         self.drug_vectorizer = None
         self.disease_vectorizer = None
         self.scaler = None
+        self.embedding_model = None
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.ARTIFACTS_DIR = None
 
@@ -61,6 +65,9 @@ class DDAPredictor:
         elif model_type == "xgboost":
             self._load_xgboost()
             self.ARTIFACTS_DIR = XGBOOST_DIR
+        elif model_type == "biobert":
+            self._load_biobert()
+            self.ARTIFACTS_DIR = BIOBERT_DIR
         else:
             self._load_mlp()
             self.ARTIFACTS_DIR = MLP_DIR
@@ -90,7 +97,29 @@ class DDAPredictor:
         model.eval()
         self.model = model
 
+    def _load_biobert(self) -> None:
+        import json
+        config_path = BIOBERT_DIR / "biobert_config.json"
+        with open(config_path, encoding="utf-8") as f:
+            config = json.load(f)
+        self.embedding_model = SentenceTransformer(
+            config["embedding_model"],
+            device=str(self.device)
+        )
+        self.model = joblib.load(BIOBERT_DIR / "biobert_lgbm_model.pkl")
+        self.drug_vectorizer = None
+        self.disease_vectorizer = None
+
     def _build_features(self, drug_names: list[str], disease_names: list[str]):
+        if self.model_type == "biobert":
+            drug_embs = self.embedding_model.encode(
+                drug_names, batch_size=32, show_progress_bar=False
+            )
+            disease_embs = self.embedding_model.encode(
+                disease_names, batch_size=32, show_progress_bar=False
+            )
+            return np.concatenate([drug_embs, disease_embs], axis=1)
+
         drug_features = self.drug_vectorizer.transform(drug_names)
         disease_features = self.disease_vectorizer.transform(disease_names)
         sparse_features = hstack([drug_features, disease_features])
@@ -104,6 +133,9 @@ class DDAPredictor:
     def predict_single(self, drug_name: str, disease_name: str) -> float:
         features = self._build_features([drug_name], [disease_name])
 
+        if self.model_type == "biobert":
+            return float(self.model.predict_proba(features)[0, 1])
+
         if self.model_type == "mlp":
             with torch.no_grad():
                 X = torch.FloatTensor(features).to(self.device)
@@ -114,6 +146,10 @@ class DDAPredictor:
     def predict_batch(self, drug_names: list[str], disease_name: str) -> list[float]:
         disease_names = [disease_name] * len(drug_names)
         features = self._build_features(drug_names, disease_names)
+
+        if self.model_type == "biobert":
+            probs = self.model.predict_proba(features)[:, 1]
+            return [float(p) for p in probs]
 
         if self.model_type == "mlp":
             with torch.no_grad():
@@ -138,6 +174,6 @@ def get_predictor(model_type: str = DEFAULT_MODEL) -> DDAPredictor:
 
 
 if __name__ == "__main__":
-    pred = get_predictor("lightgbm")
+    pred = get_predictor("biobert")
     score = pred.predict_single("Aspirin", "Hypertension")
     print(f"Aspirin → Hypertension: {score:.4f}")
