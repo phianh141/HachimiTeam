@@ -149,8 +149,9 @@ dda-backend/
 | MLP (PyTorch) | **0.9058** | 0.8288 | `ml/artifacts/mlp/` |
 | LightGBM | 0.8999 | 0.8174 | `ml/artifacts/lightgbm/` |
 | XGBoost | 0.8335 | 0.7360 | `ml/artifacts/xgboost/` |
+| BioBert | 0.8999 | 0.9632 | `ml/artifacts/biobert/` |
 
-Model mặc định dùng trong API: **LightGBM** (cân bằng tốt giữa tốc độ và độ chính xác).
+Model mặc định dùng trong API: **biobert** (cân bằng tốt giữa tốc độ và độ chính xác).
 
 ---
 
