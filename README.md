@@ -105,6 +105,7 @@ dda-backend/
 │   ├── train_lightgbm.py    ← Train LightGBM
 │   ├── train_xgboost.py     ← Train XGBoost
 │   ├── train_mlp.py         ← Train MLP (Kaggle)
+│   ├── train_biobert.py     ← Train BioBert (Kaggle) 
 │   ├── evaluate_models.py   ← So sánh 3 models
 │   ├── predictor.py         ← Load model và predict
 │   └── artifacts/           ← Model files (.pkl, .pth)
@@ -148,8 +149,9 @@ dda-backend/
 | MLP (PyTorch) | **0.9058** | 0.8288 | `ml/artifacts/mlp/` |
 | LightGBM | 0.8999 | 0.8174 | `ml/artifacts/lightgbm/` |
 | XGBoost | 0.8335 | 0.7360 | `ml/artifacts/xgboost/` |
+| BioBert | 0.8999 | 0.9632 | `ml/artifacts/biobert/` |
 
-Model mặc định dùng trong API: **LightGBM** (cân bằng tốt giữa tốc độ và độ chính xác).
+Model mặc định dùng trong API: **biobert** (cân bằng tốt giữa tốc độ và độ chính xác).
 
 ---
 
@@ -325,10 +327,27 @@ Admin  → tất cả quyền User + /admin/* routes
 ---
 
 ## Tài khoản test
+## Chạy lệnh này để tạo acc admin
+python -c "
+import sys
+sys.path.append('.')
+from app.core.database import SessionLocal
+from app.core.security import hash_password
+from app.models.models import User
 
-| Role | Email          | Password |
-|------|----------------|----------|
-| Admin | admin@dda.com | admin123 |
+db = SessionLocal()
+admin = User(
+    username='superadmin',
+    email='admin@dda.com',
+    password=hash_password('admin123'),
+    role='admin',
+    is_active=1
+)
+db.add(admin)
+db.commit()
+print('Admin created!')
+db.close()
+"
 
 > Tạo tài khoản user thường qua `POST /auth/register`
 

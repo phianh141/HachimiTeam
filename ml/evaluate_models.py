@@ -26,6 +26,8 @@ warnings.filterwarnings("ignore")
 LIGHTGBM_DIR = Path("ml/artifacts/lightgbm")
 XGBOOST_DIR  = Path("ml/artifacts/xgboost")
 MLP_DIR      = Path("ml/artifacts/mlp")
+BIOBERT_DIR = Path("ml/artifacts/biobert")
+BIOBERT_CACHE = Path("data/processed/biobert_embeddings.npz")
 DATASET_PATH = Path("data/processed/dda_dataset.csv")
 REPORTS_DIR = Path("ml/reports")
 
@@ -167,9 +169,68 @@ def evaluate_mlp(test_df: pd.DataFrame, y_test: np.ndarray) -> dict | None:
     return compute_metrics(y_test, y_pred, y_prob)
 
 
+def evaluate_biobert(test_df: pd.DataFrame, y_test: np.ndarray) -> dict | None:
+    model_path = BIOBERT_DIR / "biobert_lgbm_model.pkl"
+    config_path = BIOBERT_DIR / "biobert_config.json"
+
+    if not model_path.exists():
+        warnings.warn(f"BioBERT model not found at {model_path}, skipping.")
+        return None
+
+    if not BIOBERT_CACHE.exists():
+        warnings.warn(f"BioBERT embedding cache not found at {BIOBERT_CACHE}, skipping.")
+        return None
+
+    model = joblib.load(model_path)
+
+    embedding_dim = None
+    if config_path.exists():
+        with open(config_path, encoding="utf-8") as f:
+            config = json.load(f)
+        embedding_dim = config.get("embedding_dim")
+
+    cache = np.load(BIOBERT_CACHE)
+    drug_embs = cache["drug_embs"]
+    disease_embs = cache["disease_embs"]
+
+    if embedding_dim is None:
+        embedding_dim = int(drug_embs.shape[1])
+
+    full_df = load_dataset()
+    _, test_df_split = train_test_split(
+        full_df,
+        test_size=0.15,
+        random_state=RANDOM_STATE,
+        stratify=full_df["label"],
+    )
+    test_indices = test_df_split.index.to_numpy()
+
+    drug_test = drug_embs[test_indices]
+    disease_test = disease_embs[test_indices]
+
+    X_test = np.concatenate(
+        [
+            drug_test,
+            disease_test
+        ],
+        axis=1,
+    )
+
+    y_pred = model.predict(X_test)
+    y_prob = model.predict_proba(X_test)[:, 1]
+
+    return {
+        "accuracy": float(accuracy_score(y_test, y_pred)),
+        "auc_roc": float(roc_auc_score(y_test, y_prob)),
+        "f1_score": float(f1_score(y_test, y_pred)),
+        "precision": float(precision_score(y_test, y_pred)),
+        "recall": float(recall_score(y_test, y_pred)),
+    }
+
+
 def print_comparison_table(results: dict[str, dict], missing_models: list[str]) -> str | None:
-    model_order = ["LightGBM", "XGBoost", "MLP"]
-    key_map = {"LightGBM": "lightgbm", "XGBoost": "xgboost", "MLP": "mlp"}
+    model_order = ["LightGBM", "XGBoost", "MLP", "BioBERT"]
+    key_map = {"LightGBM": "lightgbm", "XGBoost": "xgboost", "MLP": "mlp", "BioBERT": "biobert"}
 
     available = [name for name in model_order if key_map[name] in results]
 
@@ -252,6 +313,14 @@ def main() -> None:
         print(f"  AUC-ROC: {mlp_metrics['auc_roc']:.4f}")
     else:
         missing_models.append("MLP")
+
+    print("\nEvaluating BioBERT LightGBM...")
+    biobert_metrics = evaluate_biobert(test_df, y_test)
+    if biobert_metrics:
+        results["biobert"] = biobert_metrics
+        print(f"  AUC-ROC: {biobert_metrics['auc_roc']:.4f}")
+    else:
+        missing_models.append("BioBERT")
 
     best_model = print_comparison_table(results, missing_models)
 

@@ -46,13 +46,13 @@ def predict_single(
     if cached:
         score = cached.score
     else:
-        predictor = get_predictor("lightgbm")
+        predictor = get_predictor("biobert")
         score = predictor.predict_single(drug.drug_name, disease.disease_name)
         db.add(PredictionScore(
             drug_id=request.drug_id,
             disease_id=request.disease_id,
             score=score,
-            model_version="lightgbm-v1.0"
+            model_version="biobert-v1.0"
         ))
         db.commit()
 
@@ -65,7 +65,7 @@ def predict_single(
                 drug_id=request.drug_id,
                 disease_id=request.disease_id,
                 score=score,
-                model_version="lightgbm-v1.0"
+                model_version="biobert-v1.0"
             ))
             db.commit()
 
@@ -110,7 +110,7 @@ def get_top5(
         ]
     else:
         all_drugs = db.query(Drug).all()
-        predictor = get_predictor("lightgbm")
+        predictor = get_predictor("biobert")
         drug_names = [d.drug_name for d in all_drugs]
         scores = predictor.predict_batch(drug_names, disease.disease_name)
 
@@ -121,7 +121,7 @@ def get_top5(
                     drug_id=drug.drug_id,
                     disease_id=disease_id,
                     score=score,
-                    model_version="lightgbm-v1.0"
+                    model_version="biobert-v1.0"
                 ))
         db.commit()
 
