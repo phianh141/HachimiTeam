@@ -151,7 +151,7 @@ dda-backend/
 | XGBoost | 0.8335 | 0.7360 | `ml/artifacts/xgboost/` |
 | BioBert | 0.8999 | 0.9632 | `ml/artifacts/biobert/` |
 
-Model mặc định dùng trong API: **biobert** (cân bằng tốt giữa tốc độ và độ chính xác).
+Model mặc định dùng trong API: **biobert** 
 
 ---
 

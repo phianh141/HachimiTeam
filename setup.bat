@@ -59,8 +59,17 @@ if %errorlevel% neq 0 (
     echo [!] Container dda-postgres đã tồn tại. Bỏ qua.
 )
 
-::7. Import data vào database
+::7. Tạo bảng database
+echo.
+echo Tạo cấu trúc database...
+python -c "from app.core.database import engine, Base; import app.models.models; Base.metadata.create_all(bind=engine); print('[ok] Tables created!')"
+if %errorlevel% neq 0 (
+    echo [!] Lỗi khi tạo tables.
+    pause
+    exit /b 1
+)
 
+::8. Import data vào database
 echo.
 :ask_import
 set /p "user_choice=[?] Bạn có muốn import dữ liệu vào database không? LƯU Ý chỉ import 1 lần (y/n): "
@@ -91,63 +100,14 @@ if /i "%user_choice%"=="y" (
         goto end_import
     )
     echo [ok] DDI data imported.
-echo.
-:ask_import
-set /p "user_choice=[?] Bạn có muốn import dữ liệu vào database không? LƯU Ý chỉ import 1 lần (y/n): "
-
-if /i "%user_choice%"=="y" (
-    echo.
-    if not exist "data\seed_biosnap.py" (
-        echo [!] Không tìm thấy file seed_biosnap.py.
-        goto end_import
-    )
-    if not exist "data\seed_ddi.py" (
-        echo [!] Không tìm thấy file seed_ddi.py.
-        goto end_import
-    )
-
-    echo Đang import BioSNAP data...
-    python data\seed_biosnap.py
-    if %errorlevel% neq 0 (
-        echo [!] Lỗi khi import BioSNAP data.
-        goto end_import
-    )
-<<<<<<< HEAD
->>>>>>> af27bbf (Feat:Update set_up.bat and README.md)
-=======
-    echo [ok] BioSNAP data imported.
-
-    echo Đang import DDI data...
-    python data\seed_ddi.py
-    if %errorlevel% neq 0 (
-        echo [!] Lỗi khi import DDI data.
-        goto end_import
-    )
-    echo [ok] DDI data imported.
->>>>>>> e5bdd9f (Update)
     goto end_import
 )
 
 if /i "%user_choice%"=="n" (
-<<<<<<< HEAD
-<<<<<<< HEAD
     echo [!] Bỏ qua bước import dữ liệu.
     goto end_import
 )
 
-=======
-    echo [!] Bỏ qua bước import dữ liệu theo yêu cầu.
-    goto end_import
-)
-
-:: Nếu người dùng gõ ký tự khác ngoài y/n, bắt nhập lại
->>>>>>> af27bbf (Feat:Update set_up.bat and README.md)
-=======
-    echo [!] Bỏ qua bước import dữ liệu.
-    goto end_import
-)
-
->>>>>>> e5bdd9f (Update)
 echo [!] Lựa chọn không hợp lệ. Vui lòng chỉ nhập 'y' hoặc 'n'.
 goto ask_import
 
