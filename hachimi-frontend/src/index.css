@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+/* Các cấu hình Tailwind của anh/chị ở bên dưới, ví dụ: */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Màu nền chính: Trắng ngà FCF5EF */
+    --background: 25 50% 96%; 
+    --foreground: 222.2 84% 4.9%;
+
+    /* Màu thẻ Card */
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    /* Màu chủ đạo: Xanh biển 6DB5CA */
+    --primary: 193 45% 61%; 
+    --primary-foreground: 210 40% 98%;
+
+    /* Màu phụ: Xanh nhạt B8D8E0 */
+    --secondary: 192 46% 80%; 
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    /* Màu nhấn: Cam FF7235 (Dùng cho nút bấm) */
+    --accent: 18 100% 60%; 
+    --accent-foreground: 210 40% 98%;
+
+    /* Các cấu hình viền, lỗi mặc định của Shadcn */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 193 45% 61%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}

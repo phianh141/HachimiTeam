@@ -1,0 +1,222 @@
+Dưới đây là tài liệu kỹ thuật chi tiết dành cho Frontend (React) được tổng hợp từ mã nguồn Backend (FastAPI). Bạn có thể sử dụng tài liệu này làm căn cứ để cấu hình Axios/Fetch, thiết lập State và xây dựng UI.
+
+### 1. Authentication & Security
+
+**1.1. Cấu hình CORS (`main.py`)**
+Backend đã được cấu hình sẵn để chấp nhận request từ các origin sau:
+*   `http://localhost:5173` (dành cho React Vite)
+*   `http://localhost:3000` (dành cho React Create-React-App)
+
+*Cấu hình phụ:*
+*   **Methods / Headers:** `["*"]` (Cho phép tất cả).
+*   **Credentials:** `True` (Cho phép gửi cookie/token).
+
+**1.2. Xác thực JWT Token**
+*   **Format Header yêu cầu:** Frontend khi gọi các API cần quyền truy cập phải đính kèm Header chính xác theo định dạng sau:
+    ```http
+    Authorization: Bearer <your_jwt_access_token>
+    ```
+*   **Xử lý Token:** Backend sử dụng `HTTPBearer` của FastAPI để bắt token từ header, giải mã bằng thuật toán `HS256` và lấy thông tin User qua trường `sub` (chứa `user_id`). Nếu token sai hoặc hết hạn, API sẽ ném lỗi 401.
+
+---
+
+### 2. Danh sách API Routes (Endpoints)
+
+Dưới đây là bảng tổng hợp toàn bộ các endpoint hiện có trên hệ thống và quyền truy cập tương ứng:
+
+| Method | URL Path | Authorization | Mô tả |
+| :--- | :--- | :--- | :--- |
+| **Auth (`/auth`)** | | | |
+| `POST` | `/auth/register` | Guest | Đăng ký tài khoản mới |
+| `POST` | `/auth/login` | Guest | Đăng nhập lấy JWT Token |
+| `GET` | `/auth/me` | Logged-in User | Lấy thông tin User hiện tại |
+| `GET` | `/auth/history` | Logged-in User | Lấy lịch sử dự đoán của User |
+| `DELETE` | `/auth/history/{history_id}` | Logged-in User | Xóa một lịch sử dự đoán |
+| `PUT` | `/auth/change-password` | Logged-in User | Đổi mật khẩu |
+| **Admin (`/admin`)** | | | |
+| `GET` | `/admin/users` | Admin | Lấy danh sách toàn bộ users |
+| `GET` | `/admin/users/{user_id}` | Admin | Lấy thông tin chi tiết 1 user |
+| `PATCH` | `/admin/users/{user_id}/role` | Admin | Cập nhật role (user/admin) |
+| `PATCH` | `/admin/users/{user_id}/status`| Admin | Kích hoạt/Vô hiệu hóa tài khoản |
+| `DELETE` | `/admin/users/{user_id}` | Admin | Xóa tài khoản |
+| `GET` | `/admin/stats` | Admin | Thống kê tổng quan hệ thống |
+| **Predict (`/predict`)**| | | |
+| `POST` | `/predict/single` | Guest / User* | **[F1]** Dự đoán cặp thuốc - bệnh. *(Gửi kèm Token sẽ lưu lịch sử)* |
+| `GET` | `/predict/top5/{disease_id}` | Guest | **[F2]** Lấy top 5 thuốc cho 1 bệnh |
+| **Interactions (`/interactions`)**| | | |
+| `POST` | `/interactions/check` | Guest | **[F3]** Kiểm tra tương tác thuốc |
+| **Drugs (`/drugs`)** | | | |
+| `GET` | `/drugs/` | Guest | Lấy danh sách thuốc |
+| `GET` | `/drugs/search?name={...}` | Guest | Tìm kiếm thuốc theo tên |
+| `GET` | `/drugs/{drug_id}` | Guest | Lấy chi tiết thuốc |
+| `POST` | `/drugs/` | Guest *(Thiếu check Admin)* | Thêm mới thuốc |
+| `PUT` | `/drugs/{drug_id}` | Guest *(Thiếu check Admin)* | Cập nhật thông tin thuốc |
+| `DELETE` | `/drugs/{drug_id}` | Guest *(Thiếu check Admin)* | Xóa thuốc |
+| **Diseases (`/diseases`)**| | | |
+| `GET` | `/diseases/` | Guest | Lấy danh sách bệnh |
+| `GET` | `/diseases/search?name={...}` | Guest | Tìm kiếm bệnh theo tên |
+| `GET` | `/diseases/{disease_id}` | Guest | Lấy chi tiết bệnh |
+| `POST` | `/diseases/` | Guest *(Thiếu check Admin)* | Thêm mới bệnh |
+| `PUT` | `/diseases/{disease_id}` | Guest *(Thiếu check Admin)* | Cập nhật thông tin bệnh |
+| `DELETE` | `/diseases/{disease_id}` | Guest *(Thiếu check Admin)* | Xóa bệnh |
+
+*(Lưu ý: Các route CRUD của `/drugs` và `/diseases` hiện tại không có gán dependency `require_admin`. Bất kỳ ai cũng gọi được. Bạn có thể cần bổ sung ở phía backend sau).*
+
+---
+
+### 3. Cấu trúc dữ liệu truyền nhận (Schemas)
+
+Dưới đây là cấu trúc JSON chi tiết dành cho các tính năng chính của người dùng.
+
+#### 3.1. Xác thực (Đăng ký / Đăng nhập)
+
+**Đăng ký (Register)**
+*   **Request Body**
+```json
+{
+  "username": "nguyenvana",
+  "email": "vana@example.com",
+  "password": "strongpassword123"
+}
+```
+*   **Response Body (201 Created)**
+```json
+{
+  "user_id": 1,
+  "username": "nguyenvana",
+  "email": "vana@example.com",
+  "role": "user",
+  "is_active": 1
+}
+```
+
+**Đăng nhập (Login)**
+*   **Request Body**
+```json
+{
+  "email": "vana@example.com",
+  "password": "strongpassword123"
+}
+```
+*   **Response Body (200 OK)**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR...",
+  "token_type": "bearer",
+  "user": {
+    "user_id": 1,
+    "username": "nguyenvana",
+    "email": "vana@example.com",
+    "role": "user",
+    "is_active": 1
+  }
+}
+```
+
+#### 3.2. Tính năng F1 - Dự đoán cặp Thuốc - Bệnh
+*   **Request Body**
+```json
+{
+  "drug_id": 105,
+  "disease_id": 42
+}
+```
+*   **Response Body**
+```json
+{
+  "drug_id": 105,
+  "disease_id": 42,
+  "drug_name": "Aspirin",
+  "disease_name": "Hypertension",
+  "score": 0.8542,
+  "confidence": "High"  // Có thể là: "High" (>= 0.7), "Medium" (>= 0.4), "Low" (< 0.4)
+}
+```
+
+#### 3.3. Tính năng F2 - Dự đoán nhóm (Top 5 Thuốc)
+*   **Request** (Method: `GET`, Path Variable: `disease_id`)
+*   **Response Body**
+```json
+{
+  "disease_id": 42,
+  "disease_name": "Hypertension",
+  "top_drugs": [
+    {
+      "drug_id": 105,
+      "drug_name": "Aspirin",
+      "score": 0.8542,
+      "confidence": "High"
+    },
+    {
+      "drug_id": 210,
+      "drug_name": "Lisinopril",
+      "score": 0.7812,
+      "confidence": "High"
+    }
+    // ... tối đa 5 items
+  ]
+}
+```
+
+#### 3.4. Tính năng F3 - Kiểm tra tương tác thuốc
+*   **Request Body**
+```json
+{
+  "drug_names": [
+    "Aspirin",
+    "Ibuprofen",
+    "Warfarin"
+  ]
+}
+```
+*   **Response Body**
+```json
+{
+  "total_drugs": 3,
+  "total_pairs_checked": 3,
+  "interactions_found": 1,
+  "interactions": [
+    {
+      "drug_a": "Aspirin",
+      "drug_b": "Ibuprofen",
+      "description": "Tăng nguy cơ chảy máu dạ dày khi dùng chung.",
+      "source": "TWOSIDES"
+    }
+  ]
+}
+```
+
+---
+
+### 4. Luồng xử lý ngoại lệ (Error Handling)
+
+Hệ thống Backend (FastAPI) trả về lỗi dưới một định dạng chuẩn hóa, rất dễ để Frontend parse và hiển thị thông báo (`toast`/`alert`).
+
+**4.1. Lỗi Logic / Xác thực (400, 401, 403, 404)**
+Backend sẽ ném ra lỗi có cấu trúc JSON chứa key `"detail"` chứa câu thông báo lỗi (String).
+*Ví dụ khi nhập sai mật khẩu (401), thiếu quyền (403), không tìm thấy data (404), email trùng lặp (400):*
+```json
+{
+  "detail": "Email hoặc mật khẩu không đúng"
+}
+```
+
+**4.2. Lỗi Validation Dữ Liệu (422 Unprocessable Entity)**
+Khi Frontend gửi thiếu field bắt buộc, gửi sai định dạng kiểu dữ liệu (ví dụ: `drug_id` yêu cầu là `int` nhưng truyền lên `string` không parse được), Pydantic sẽ tự động trả về lỗi dạng mảng (Array).
+*Cấu trúc JSON:*
+```json
+{
+  "detail": [
+    {
+      "loc": [
+        "body",
+        "email"
+      ],
+      "msg": "field required",
+      "type": "value_error.missing"
+    }
+  ]
+}
+```
+
+**Khuyến nghị cho Frontend React:** Bạn có thể thiết lập một `axios.interceptor` (hoặc util call API chung) để bắt các mã lỗi HTTP này và `toast(error.response.data.detail)` để hiển thị thông báo trực tiếp cho User.
