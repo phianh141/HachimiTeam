@@ -19,7 +19,7 @@ echo [ok] Python đã được cài đặt.
 :: 2. Tạo môi trường ảo
 if not exist "venv" (
     echo Tạo môi trường ảo...
-    python -m venv venv
+    py -3.12 -m venv venv
 ) else (
     echo [!] Môi trường ảo đã tồn tại. Bỏ qua.
 )
@@ -59,17 +59,8 @@ if %errorlevel% neq 0 (
     echo [!] Container dda-postgres đã tồn tại. Bỏ qua.
 )
 
-::7. Tạo bảng database
-echo.
-echo Tạo cấu trúc database...
-python -c "from app.core.database import engine, Base; import app.models.models; Base.metadata.create_all(bind=engine); print('[ok] Tables created!')"
-if %errorlevel% neq 0 (
-    echo [!] Lỗi khi tạo tables.
-    pause
-    exit /b 1
-)
+::7. Import data vào database
 
-::8. Import data vào database
 echo.
 :ask_import
 set /p "user_choice=[?] Bạn có muốn import dữ liệu vào database không? LƯU Ý chỉ import 1 lần (y/n): "
@@ -100,8 +91,7 @@ if /i "%user_choice%"=="y" (
         goto end_import
     )
     echo [ok] DDI data imported.
-    goto end_import
-)
+
 
 if /i "%user_choice%"=="n" (
     echo [!] Bỏ qua bước import dữ liệu.
