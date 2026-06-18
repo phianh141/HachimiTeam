@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -22,10 +25,25 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      navigate('/dashboard/predict-single');
+      const response = await api.post('/auth/login', {
+        email: email,
+        password: password
+      });
+      // Save token and user info via context
+      login(response.data.user, response.data.access_token);
+      
+      // Navigate based on role
+      if (response.data.user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/dashboard/predict-single');
+      }
     } catch (err) {
-      setError('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
+      if (err.response && err.response.data && err.response.data.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError('Đăng nhập thất bại. Vui lòng kiểm tra lại kết nối.');
+      }
     } finally {
       setLoading(false);
     }

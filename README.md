@@ -27,17 +27,7 @@ git clone <repo-url>
 cd dda-backend
 ```
 
-Mở file `.env_sample`, đổi tên thành `.env`, chỉnh sửa nếu cần:
-
-```env
-DATABASE_URL=postgresql://dda_user:dda_pass@localhost:5432/dda_db
-APP_NAME=DDA System
-DEBUG=True
-SECRET_KEY=dda_super_secret_key_change_this_in_production
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-```
-
-> Mặc định không cần chỉnh gì nếu chạy local.
+*(Lưu ý: Mọi cấu hình kết nối Database mặc định đã được thiết lập sẵn cho môi trường chạy ở máy cá nhân).*
 
 ### Bước 3 — Chạy file setup
 
@@ -46,8 +36,9 @@ setup.bat
 ```
 
 Script này sẽ tự động:
-- Kiểm tra Python và Docker
-- Tạo virtual environment và cài thư viện
+- Kiểm tra phiên bản Python và Docker
+- Tự động sinh file cấu hình `.env` từ file mẫu
+- Tạo môi trường ảo (virtual environment) bằng Python 3.12 và cài các thư viện
 - Tạo container PostgreSQL
 - Hỏi có muốn import data vào DB không (chỉ làm **1 lần duy nhất**)
 

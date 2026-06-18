@@ -19,9 +19,16 @@ echo [ok] Python đã được cài đặt.
 :: 2. Tạo môi trường ảo
 if not exist "venv" (
     echo Tạo môi trường ảo...
-    python -m venv venv
+    py -3.12 -m venv venv
 ) else (
     echo [!] Môi trường ảo đã tồn tại. Bỏ qua.
+)
+
+:: 2.5. Tạo file .env nếu chưa có
+if not exist ".env" (
+    echo Tạo file .env từ .env_sample...
+    copy .env_sample .env >nul
+    echo [ok] Đã tạo file .env tự động.
 )
 
 :: 3. Kích hoạt và nâng cấp pip
@@ -91,63 +98,13 @@ if /i "%user_choice%"=="y" (
         goto end_import
     )
     echo [ok] DDI data imported.
-echo.
-:ask_import
-set /p "user_choice=[?] Bạn có muốn import dữ liệu vào database không? LƯU Ý chỉ import 1 lần (y/n): "
 
-if /i "%user_choice%"=="y" (
-    echo.
-    if not exist "data\seed_biosnap.py" (
-        echo [!] Không tìm thấy file seed_biosnap.py.
-        goto end_import
-    )
-    if not exist "data\seed_ddi.py" (
-        echo [!] Không tìm thấy file seed_ddi.py.
-        goto end_import
-    )
-
-    echo Đang import BioSNAP data...
-    python data\seed_biosnap.py
-    if %errorlevel% neq 0 (
-        echo [!] Lỗi khi import BioSNAP data.
-        goto end_import
-    )
-<<<<<<< HEAD
->>>>>>> af27bbf (Feat:Update set_up.bat and README.md)
-=======
-    echo [ok] BioSNAP data imported.
-
-    echo Đang import DDI data...
-    python data\seed_ddi.py
-    if %errorlevel% neq 0 (
-        echo [!] Lỗi khi import DDI data.
-        goto end_import
-    )
-    echo [ok] DDI data imported.
->>>>>>> e5bdd9f (Update)
-    goto end_import
-)
 
 if /i "%user_choice%"=="n" (
-<<<<<<< HEAD
-<<<<<<< HEAD
     echo [!] Bỏ qua bước import dữ liệu.
     goto end_import
 )
 
-=======
-    echo [!] Bỏ qua bước import dữ liệu theo yêu cầu.
-    goto end_import
-)
-
-:: Nếu người dùng gõ ký tự khác ngoài y/n, bắt nhập lại
->>>>>>> af27bbf (Feat:Update set_up.bat and README.md)
-=======
-    echo [!] Bỏ qua bước import dữ liệu.
-    goto end_import
-)
-
->>>>>>> e5bdd9f (Update)
 echo [!] Lựa chọn không hợp lệ. Vui lòng chỉ nhập 'y' hoặc 'n'.
 goto ask_import
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
+import api from '../utils/api';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -28,10 +29,19 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await api.post('/auth/register', {
+        username: username,
+        email: email,
+        password: password
+      });
+      // Navigate to login on success
       navigate('/login');
     } catch (err) {
-      setError('Đăng ký thất bại. Vui lòng thử lại sau.');
+      if (err.response && err.response.data && err.response.data.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError('Đăng ký thất bại. Vui lòng thử lại sau.');
+      }
     } finally {
       setLoading(false);
     }

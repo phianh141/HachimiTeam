@@ -1,7 +1,91 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 const Interactions = () => {
+  const { user, logout } = useAuth();
+  
+  const [drugs, setDrugs] = useState([]);
+  const [selectedDrugs, setSelectedDrugs] = useState([]);
+  const [currentInput, setCurrentInput] = useState('');
+  
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [results, setResults] = useState(null);
+
+  useEffect(() => {
+    const fetchDrugs = async () => {
+      try {
+        const res = await api.get('/drugs');
+        setDrugs(res.data);
+      } catch (err) {
+        console.error('Lỗi khi tải danh sách thuốc:', err);
+      }
+    };
+    fetchDrugs();
+  }, []);
+
+  const handleAddDrug = () => {
+    if (!currentInput.trim()) return;
+    
+    // Check if valid drug
+    const drug = drugs.find(d => d.drug_name.toLowerCase() === currentInput.toLowerCase());
+    if (!drug) {
+      setError(`Thuốc "${currentInput}" không tồn tại trong hệ thống.`);
+      return;
+    }
+
+    if (selectedDrugs.includes(drug.drug_name)) {
+      setError(`Thuốc "${drug.drug_name}" đã được chọn.`);
+      return;
+    }
+
+    if (selectedDrugs.length >= 10) {
+      setError('Bạn chỉ có thể chọn tối đa 10 thuốc.');
+      return;
+    }
+
+    setSelectedDrugs([...selectedDrugs, drug.drug_name]);
+    setCurrentInput('');
+    setError('');
+    setResults(null);
+  };
+
+  const handleRemoveDrug = (drugName) => {
+    setSelectedDrugs(selectedDrugs.filter(d => d !== drugName));
+    setResults(null);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddDrug();
+    }
+  };
+
+  const handleCheck = async () => {
+    if (selectedDrugs.length < 2) {
+      setError('Vui lòng chọn ít nhất 2 loại thuốc để kiểm tra tương tác.');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    setResults(null);
+
+    try {
+      const res = await api.post('/interactions/check', {
+        drug_names: selectedDrugs
+      });
+      setResults(res.data);
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Có lỗi xảy ra khi kiểm tra tương tác.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
       
@@ -23,16 +107,36 @@ const Interactions = () => {
               <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/dashboard/predict-single">Dự đoán cặp</Link>
               <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/dashboard/predict-top5">Top Thuốc</Link>
               <Link className="text-[#0052CC] text-lg font-bold border-b-2 border-[#0052CC] pb-1" to="/dashboard/interactions">Tương tác</Link>
-              <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/login">Đăng nhập / Đăng ký</Link>
             </nav>
             
-            <div className="hidden md:block relative">
-              <input 
-                className="w-72 pl-5 pr-12 py-2.5 border border-slate-300 bg-slate-50 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:bg-white transition-all" 
-                placeholder="Search in site..." 
-                type="text" 
-              />
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+            <div className="flex items-center gap-8">
+              <div className="hidden md:block relative">
+                <input 
+                  className="w-72 pl-5 pr-12 py-2.5 border border-slate-300 bg-slate-50 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#0052CC] focus:bg-white transition-all" 
+                  placeholder="Search in site..." 
+                  type="text" 
+                />
+                <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+              </div>
+
+              {user ? (
+                <div className="flex items-center gap-4">
+                  <Link to="/profile" className="flex items-center gap-2 px-4 py-2 rounded-xl hover:bg-slate-50 transition-colors">
+                    <div className="w-10 h-10 bg-[#0052CC] rounded-full flex items-center justify-center text-white font-bold text-lg">
+                      {user.username.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="font-bold text-slate-700 hidden sm:block">{user.username}</span>
+                  </Link>
+                  <button onClick={logout} className="text-slate-500 hover:text-rose-600 transition-colors p-2 rounded-lg hover:bg-rose-50" title="Đăng xuất">
+                    <span className="material-symbols-outlined">logout</span>
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <Link to="/login" className="px-6 py-3 text-base font-bold text-slate-700 hover:text-[#0052CC] transition-colors">Đăng nhập</Link>
+                  <Link to="/register" className="px-6 py-3 bg-slate-900 text-white rounded-lg text-base font-bold hover:bg-[#0052CC] transition-colors shadow-sm">Đăng ký</Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -68,8 +172,19 @@ const Interactions = () => {
             <div className="lg:col-span-5">
               <h2 className="text-4xl font-bold text-slate-900 mb-4">Kiểm tra tương tác nhanh</h2>
               <p className="text-xl text-slate-600 mb-10 leading-relaxed">Chọn tối đa 10 loại thuốc để tra cứu và đánh giá các tương tác có khả năng xảy ra.</p>
-              <button className="bg-slate-900 text-white px-10 py-4 rounded-2xl text-lg font-bold shadow-lg hover:bg-[#0052CC] hover:shadow-xl hover:-translate-y-0.5 transition-all w-full sm:w-auto">
-                Kiểm tra Tương tác
+              
+              {error && (
+                <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl font-medium">
+                  {error}
+                </div>
+              )}
+
+              <button 
+                onClick={handleCheck}
+                disabled={loading || selectedDrugs.length < 2}
+                className="bg-slate-900 text-white px-10 py-4 rounded-2xl text-lg font-bold shadow-lg hover:bg-[#0052CC] hover:shadow-xl hover:-translate-y-0.5 transition-all w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Đang phân tích...' : 'Kiểm tra Tương tác'}
               </button>
             </div>
             
@@ -82,18 +197,18 @@ const Interactions = () => {
                   className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl shrink-0 object-cover bg-slate-50 border border-slate-100" 
                 />
                 <div className="flex-grow w-full">
-                  <h3 className="font-bold text-2xl text-slate-900 mb-1">Thuốc đã chọn (3/10)</h3>
+                  <h3 className="font-bold text-2xl text-slate-900 mb-1">Thuốc đã chọn ({selectedDrugs.length}/10)</h3>
                   <p className="text-base text-slate-500 mb-4">Xóa thuốc khỏi danh sách bằng nút "×"</p>
                   <div className="flex flex-wrap gap-3">
-                    <span className="inline-flex items-center px-4 py-2 rounded-xl text-base font-medium bg-slate-50 text-slate-700 border border-slate-200 shadow-sm hover:bg-slate-100 transition-colors">
-                      Amlodipin <span className="ml-2 text-slate-400 cursor-pointer hover:text-red-500 font-bold">×</span>
-                    </span>
-                    <span className="inline-flex items-center px-4 py-2 rounded-xl text-base font-medium bg-slate-50 text-slate-700 border border-slate-200 shadow-sm hover:bg-slate-100 transition-colors">
-                      Metformin <span className="ml-2 text-slate-400 cursor-pointer hover:text-red-500 font-bold">×</span>
-                    </span>
-                    <span className="inline-flex items-center px-4 py-2 rounded-xl text-base font-medium bg-slate-50 text-slate-700 border border-slate-200 shadow-sm hover:bg-slate-100 transition-colors">
-                      Omeprazol <span className="ml-2 text-slate-400 cursor-pointer hover:text-red-500 font-bold">×</span>
-                    </span>
+                    {selectedDrugs.length === 0 ? (
+                      <span className="text-slate-400 italic">Chưa chọn thuốc nào.</span>
+                    ) : (
+                      selectedDrugs.map(drug => (
+                        <span key={drug} className="inline-flex items-center px-4 py-2 rounded-xl text-base font-medium bg-slate-50 text-slate-700 border border-slate-200 shadow-sm hover:bg-slate-100 transition-colors">
+                          {drug} <span onClick={() => handleRemoveDrug(drug)} className="ml-2 text-slate-400 cursor-pointer hover:text-red-500 font-bold">×</span>
+                        </span>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -106,12 +221,26 @@ const Interactions = () => {
                 <div className="flex-grow w-full">
                   <h3 className="font-bold text-2xl text-slate-900 mb-1">Thêm thuốc</h3>
                   <p className="text-base text-slate-500 mb-4">Tìm kiếm theo tên hoạt chất hoặc biệt dược.</p>
-                  <div className="relative w-full">
+                  <div className="relative w-full flex gap-3">
                     <input 
+                      list="drugs-list"
                       className="w-full p-4 border border-slate-300 rounded-2xl text-lg focus:ring-2 focus:ring-[#0052CC] focus:border-[#0052CC] shadow-inner transition-all" 
-                      placeholder='Ô combobox: "Thêm thuốc..."' 
-                      type="text"
+                      placeholder='Gõ để tìm kiếm...' 
+                      value={currentInput}
+                      onChange={(e) => setCurrentInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
                     />
+                    <datalist id="drugs-list">
+                      {drugs.map(d => (
+                        <option key={d.drug_id} value={d.drug_name} />
+                      ))}
+                    </datalist>
+                    <button 
+                      onClick={handleAddDrug}
+                      className="bg-slate-100 text-slate-700 px-6 rounded-2xl font-bold hover:bg-slate-200 transition-colors border border-slate-200"
+                    >
+                      Thêm
+                    </button>
                   </div>
                   <div className="flex gap-3 mt-4">
                     <span className="text-sm text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg font-medium">Tự động gợi ý</span>
@@ -119,204 +248,79 @@ const Interactions = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Card 3: Thao tác */}
-              <div className="bg-white rounded-3xl p-6 lg:p-8 border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-6 items-start opacity-50">
-                <div className="w-20 h-20 lg:w-24 lg:h-24 shrink-0 bg-slate-100 flex items-center justify-center rounded-2xl border border-slate-200 text-slate-400">
-                  <span className="material-symbols-outlined text-4xl">touch_app</span>
-                </div>
-                <div className="flex-grow w-full">
-                  <h3 className="font-bold text-2xl text-slate-900 mb-1">Thao tác</h3>
-                  <p className="text-base text-slate-500 mb-4">Nút chính: "Kiểm tra Tương tác"</p>
-                  <div className="flex gap-3 mt-2">
-                    <span className="text-sm text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg font-medium">Chỉ hiển thị khi đã chọn thuốc</span>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* ==================== LIST SECTION ==================== */}
-        <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 py-16 lg:py-20 border-b border-slate-200">
-          <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
-            <div className="lg:col-span-5">
-              <h2 className="text-4xl font-bold text-slate-900 mb-4">Danh sách thuốc</h2>
-              <p className="text-xl text-slate-600 leading-relaxed">Quản lý danh sách thuốc để thực hiện tra cứu tương tác trực quan.</p>
-            </div>
-            
-            <div className="lg:col-span-7 bg-white p-8 lg:p-10 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="mb-8">
-                <label className="block text-xl font-bold text-slate-900 mb-4">Thuốc đã chọn (3/10)</label>
-                <div className="w-full p-4 border border-slate-200 rounded-2xl bg-slate-50 min-h-[72px] flex flex-wrap items-center gap-3">
-                  <span className="inline-flex items-center px-4 py-2 rounded-xl text-base font-medium bg-white text-slate-700 border border-slate-200 shadow-sm">
-                    Amlodipin <span className="ml-2 text-slate-400 cursor-pointer hover:text-red-500 font-bold">×</span>
-                  </span>
-                  <span className="inline-flex items-center px-4 py-2 rounded-xl text-base font-medium bg-white text-slate-700 border border-slate-200 shadow-sm">
-                    Metformin <span className="ml-2 text-slate-400 cursor-pointer hover:text-red-500 font-bold">×</span>
-                  </span>
-                  <span className="inline-flex items-center px-4 py-2 rounded-xl text-base font-medium bg-white text-slate-700 border border-slate-200 shadow-sm">
-                    Omeprazol <span className="ml-2 text-slate-400 cursor-pointer hover:text-red-500 font-bold">×</span>
-                  </span>
-                </div>
-                <p className="mt-3 text-sm text-slate-500 font-medium">3 thẻ có nút xóa: × (Amlodipin, Metformin, Omeprazol)</p>
-              </div>
-              
-              <div className="mb-8 relative">
-                <label className="block text-xl font-bold text-slate-900 mb-4">Thêm thuốc...</label>
-                <input 
-                  className="w-full p-5 border border-slate-300 rounded-2xl text-lg focus:ring-2 focus:ring-[#0052CC] focus:border-[#0052CC] shadow-inner transition-all" 
-                  placeholder="Nhập tên thuốc để tìm kiếm" 
-                  type="text"
-                />
-                <p className="mt-3 text-sm text-slate-500 font-medium">Cho phép chọn nhiều thuốc • Tối đa 10</p>
-              </div>
-              
-              <button className="bg-slate-900 text-white px-10 py-4 rounded-2xl text-lg font-bold shadow-lg hover:bg-[#0052CC] hover:shadow-xl hover:-translate-y-0.5 transition-all w-full sm:w-auto">
-                Kiểm tra Tương tác
-              </button>
-            </div>
-          </div>
-        </div>
-        
         {/* ==================== DETAILED RESULTS SECTION ==================== */}
-        <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 py-16 lg:py-20 text-center">
-          <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4">Kết Quả Phân Tích</h2>
-          <p className="text-xl text-slate-600 mb-16">Chi tiết các tương tác được phát hiện dựa trên danh sách thuốc đã chỉ định.</p>
-          
-          {/* Chart Section */}
-          <div className="max-w-4xl mx-auto bg-white border border-slate-200 rounded-3xl p-8 lg:p-10 shadow-sm mb-16 text-left hover:shadow-md transition-shadow">
-            <h3 className="font-bold text-2xl text-slate-900 mb-2">Tổng quan mức độ tương tác</h3>
-            <p className="text-base text-slate-500 mb-10">Thống kê số lượng theo nhóm cảnh báo</p>
-            <div className="h-56 flex items-end justify-between gap-4 border-b border-slate-200 pb-2 relative">
-              <div className="absolute w-full border-t border-slate-100 border-dashed top-0"></div>
-              <div className="absolute w-full border-t border-slate-100 border-dashed top-1/2"></div>
-              <div className="w-full bg-slate-300 rounded-t-lg h-[80%] hover:bg-[#0052CC] hover:shadow-lg transition-all cursor-pointer relative z-10"></div>
-              <div className="w-full bg-slate-300 rounded-t-lg h-[40%] hover:bg-[#0052CC] hover:shadow-lg transition-all cursor-pointer relative z-10"></div>
-              <div className="w-full bg-slate-300 rounded-t-lg h-[20%] hover:bg-[#0052CC] hover:shadow-lg transition-all cursor-pointer relative z-10"></div>
-              <div className="w-full bg-slate-300 rounded-t-lg h-[45%] hover:bg-[#0052CC] hover:shadow-lg transition-all cursor-pointer relative z-10"></div>
-              <div className="w-full bg-slate-300 rounded-t-lg h-[30%] hover:bg-[#0052CC] hover:shadow-lg transition-all cursor-pointer relative z-10"></div>
-              <div className="w-full bg-slate-300 rounded-t-lg h-[60%] hover:bg-[#0052CC] hover:shadow-lg transition-all cursor-pointer relative z-10"></div>
+        {results && (
+          <>
+            <div className="max-w-screen-2xl mx-auto px-6 lg:px-8 py-16 lg:py-20 text-center border-b border-slate-200">
+              <h2 className="text-4xl lg:text-5xl font-bold text-slate-900 mb-4">Kết Quả Phân Tích</h2>
+              <p className="text-xl text-slate-600 mb-8">Đã kiểm tra {results.total_pairs_checked} cặp tương tác từ {results.total_drugs} thuốc.</p>
             </div>
-            <div className="text-right mt-3 text-sm text-slate-500 font-medium">Biểu đồ phân bố nhóm tương tác</div>
-          </div>
-        </div>
 
-        {/* Interaction Results Cards */}
-        <div className="bg-slate-50 py-16 lg:py-20 border-t border-slate-200">
-          <div className="max-w-screen-2xl mx-auto px-6 lg:px-8">
-            <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
-              
-              <div className="lg:col-span-4 lg:sticky lg:top-32">
-                <div className="bg-white p-8 lg:p-10 rounded-3xl border border-slate-200 shadow-sm">
-                  <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mb-6">
-                    <span className="material-symbols-outlined text-3xl">warning</span>
+            <div className="bg-slate-50 py-16 lg:py-20 border-t border-slate-200">
+              <div className="max-w-screen-2xl mx-auto px-6 lg:px-8">
+                <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-start">
+                  
+                  <div className="lg:col-span-4 lg:sticky lg:top-32">
+                    <div className="bg-white p-8 lg:p-10 rounded-3xl border border-slate-200 shadow-sm">
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 ${results.interactions_found > 0 ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                        <span className="material-symbols-outlined text-3xl">{results.interactions_found > 0 ? 'warning' : 'check_circle'}</span>
+                      </div>
+                      <h2 className="text-4xl font-bold text-slate-900 mb-4">
+                        Phát hiện<br/>
+                        <span className={results.interactions_found > 0 ? 'text-rose-600' : 'text-emerald-600'}>
+                          {results.interactions_found} tương tác
+                        </span>
+                      </h2>
+                      <p className="text-lg text-slate-600 leading-relaxed">
+                        {results.interactions_found > 0 
+                          ? "Xem chi tiết từng tương tác theo cặp thuốc. Dữ liệu được tổng hợp và đối chiếu từ các nguồn y khoa uy tín." 
+                          : "Không tìm thấy tương tác nào giữa các thuốc đã chọn dựa trên cơ sở dữ liệu hiện tại."}
+                      </p>
+                    </div>
                   </div>
-                  <h2 className="text-4xl font-bold text-slate-900 mb-4">Phát hiện<br/><span className="text-rose-600">2 tương tác</span></h2>
-                  <p className="text-lg text-slate-600 leading-relaxed">
-                    Xem chi tiết từng tương tác theo cặp thuốc. Dữ liệu được tổng hợp và đối chiếu từ các nguồn y khoa uy tín.
-                  </p>
+                  
+                  <div className="lg:col-span-8 space-y-8">
+                    {results.interactions.map((interaction, idx) => (
+                      <div key={idx} className="bg-white rounded-3xl p-8 lg:p-10 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col sm:flex-row gap-8 items-start">
+                        <img 
+                          src="/bệnh lý.jpg" 
+                          alt="Bệnh lý" 
+                          className="w-24 h-24 rounded-2xl shrink-0 object-cover bg-slate-50 border border-slate-100 hidden sm:block" 
+                        />
+                        <div className="flex-grow w-full">
+                          <div className="flex flex-wrap items-center gap-3 mb-4">
+                            <span className="px-4 py-1.5 bg-rose-50 text-rose-700 text-sm font-bold rounded-lg border border-rose-200">
+                              Cảnh báo tương tác
+                            </span>
+                          </div>
+                          
+                          <div className="inline-flex items-center text-xl text-slate-500 mb-4 font-bold bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <span className="text-[#0052CC]">{interaction.drug_a}</span>
+                            <span className="material-symbols-outlined text-xl mx-4 text-slate-400">sync_alt</span>
+                            <span className="text-rose-600">{interaction.drug_b}</span>
+                          </div>
+                          
+                          <p className="text-slate-600 text-lg leading-relaxed mb-6">
+                            {interaction.description}
+                          </p>
+                          
+                          <div className="flex items-center gap-2 text-sm font-medium text-slate-500 border-t border-slate-100 pt-5">
+                            <span className="material-symbols-outlined text-[18px]">menu_book</span>
+                            <span>Nguồn: {interaction.source}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-              
-              <div className="lg:col-span-8 space-y-8">
-                
-                {/* Result Header Card CẬP NHẬT: Chữ cực to, in đậm và nổi bật hơn */}
-                <div className="bg-white rounded-3xl p-8 lg:p-12 border border-slate-200 shadow-md flex flex-col justify-center">
-                  <h3 className="font-black text-4xl lg:text-5xl text-slate-900 mb-4 tracking-tight">
-                    Bảng kết quả
-                  </h3>
-                  <p className="text-xl lg:text-2xl text-slate-600 font-medium">
-                    Cột: <span className="text-[#0052CC]">Thuốc A</span> <span className="mx-2 text-slate-300">|</span> <span className="text-rose-600">Thuốc B</span> <span className="mx-2 text-slate-300">|</span> Mô tả tương tác <span className="mx-2 text-slate-300">|</span> Nguồn cấp
-                  </p>
-                </div>
-
-                {/* Interaction 1 */}
-                <div className="bg-white rounded-3xl p-8 lg:p-10 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col sm:flex-row gap-8 items-start">
-                  <img 
-                    src="/bệnh lý.jpg" 
-                    alt="Bệnh lý" 
-                    className="w-24 h-24 rounded-2xl shrink-0 object-cover bg-slate-50 border border-slate-100 hidden sm:block" 
-                  />
-                  <div className="flex-grow w-full">
-                    <div className="flex flex-wrap items-center gap-3 mb-4">
-                      <span className="px-4 py-1.5 bg-rose-50 text-rose-700 text-sm font-bold rounded-lg border border-rose-200">
-                        Cảnh báo mức độ 1
-                      </span>
-                    </div>
-                    
-                    <div className="inline-flex items-center text-xl text-slate-500 mb-4 font-bold bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                      <span className="text-[#0052CC]">Amlodipin</span>
-                      <span className="material-symbols-outlined text-xl mx-4 text-slate-400">sync_alt</span>
-                      <span className="text-rose-600">Omeprazol</span>
-                    </div>
-                    
-                    <h3 className="font-bold text-2xl text-slate-900 mb-3">Tăng nguy cơ tác dụng phụ</h3>
-                    <p className="text-slate-600 text-lg leading-relaxed mb-6">
-                      Việc sử dụng chung hai loại thuốc này có thể dẫn đến một số ảnh hưởng nhất định. Khuyến cáo không nên tự ý thay đổi liều lượng nếu không có sự cho phép của bác sĩ.
-                    </p>
-                    
-                    <div className="flex flex-wrap gap-3 mb-6">
-                      <span className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                        <span className="material-symbols-outlined text-[18px] mr-1.5">visibility</span> Theo dõi triệu chứng
-                      </span>
-                      <span className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                        <span className="material-symbols-outlined text-[18px] mr-1.5">do_not_disturb</span> Tránh tự ý thay đổi liều
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-sm font-medium text-slate-500 border-t border-slate-100 pt-5">
-                      <span className="material-symbols-outlined text-[18px]">menu_book</span>
-                      <span>Nguồn: Hướng dẫn lâm sàng Bộ Y Tế</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Interaction 2 */}
-                <div className="bg-white rounded-3xl p-8 lg:p-10 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col sm:flex-row gap-8 items-start">
-                  <img 
-                    src="/bệnh lý.jpg" 
-                    alt="Bệnh lý" 
-                    className="w-24 h-24 rounded-2xl shrink-0 object-cover bg-slate-50 border border-slate-100 hidden sm:block" 
-                  />
-                  <div className="flex-grow w-full">
-                    <div className="flex flex-wrap items-center gap-3 mb-4">
-                      <span className="px-4 py-1.5 bg-amber-50 text-amber-700 text-sm font-bold rounded-lg border border-amber-200">
-                        Lưu ý theo dõi
-                      </span>
-                    </div>
-                    
-                    <div className="inline-flex items-center text-xl text-slate-500 mb-4 font-bold bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                      <span className="text-[#0052CC]">Metformin</span>
-                      <span className="material-symbols-outlined text-xl mx-4 text-slate-400">sync_alt</span>
-                      <span className="text-amber-600">Omeprazol</span>
-                    </div>
-                    
-                    <h3 className="font-bold text-2xl text-slate-900 mb-3">Khả năng ảnh hưởng hấp thu</h3>
-                    <p className="text-slate-600 text-lg leading-relaxed mb-6">
-                      Sự kết hợp này có thể làm giảm sinh khả dụng hoặc thay đổi thời gian hấp thu của Metformin. Nên kiểm tra và điều chỉnh liều nếu cần thiết.
-                    </p>
-                    
-                    <div className="flex flex-wrap gap-3 mb-6">
-                      <span className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-blue-50 text-[#0052CC] border border-blue-200">
-                        <span className="material-symbols-outlined text-[18px] mr-1.5">monitor_heart</span> Theo dõi đường huyết
-                      </span>
-                      <span className="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <span className="material-symbols-outlined text-[18px] mr-1.5">medical_information</span> Tư vấn dược sĩ
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-sm font-medium text-slate-500 border-t border-slate-100 pt-5">
-                      <span className="material-symbols-outlined text-[18px]">database</span>
-                      <span>Nguồn: Cơ sở dữ liệu Thuốc Quốc gia</span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </main>
       
       {/* ==================== FOOTER ==================== */}
