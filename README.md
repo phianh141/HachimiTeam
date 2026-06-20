@@ -6,8 +6,8 @@ Hệ thống dự đoán liên kết Thuốc-Bệnh dựa trên Machine Learning
 
 ## Yêu cầu hệ thống
 
-- Python 3.12+
-- Docker Desktop
+- **Python 3.12** (bắt buộc đúng phiên bản)
+- **Docker Desktop** (đang chạy)
 - Git
 
 ---
@@ -18,43 +18,72 @@ Hệ thống dự đoán liên kết Thuốc-Bệnh dựa trên Machine Learning
 
 Tải và cài đặt tại: https://www.docker.com/products/docker-desktop
 
-Sau khi cài xong, mở Docker Desktop và đảm bảo nó đang chạy (icon ở taskbar).
+Mở Docker Desktop và đảm bảo icon ở taskbar đang chạy (không có dấu X).
 
-### Bước 2 — Clone repo và cấu hình môi trường
+### Bước 2 — Cài Python 3.12
+
+> **Quan trọng:** Phải dùng đúng Python 3.12, không dùng 3.11 hay 3.13.
+
+Tải tại: https://www.python.org/downloads/release/python-3120/
+
+Khi cài đặt, tích chọn **"Add Python to PATH"**.
+
+Kiểm tra sau khi cài:
+```bash
+py -3.12 --version
+# Kết quả: Python 3.12.x
+```
+
+### Bước 3 — Clone repo
 
 ```bash
 git clone <repo-url>
 cd dda-backend
 ```
 
-*(Lưu ý: Mọi cấu hình kết nối Database mặc định đã được thiết lập sẵn cho môi trường chạy ở máy cá nhân).*
+### Bước 4 — Chạy file setup
 
-### Bước 3 — Chạy file setup
+Double-click vào `setup.bat` hoặc chạy trong CMD:
 
 ```bash
 setup.bat
 ```
 
-Script này sẽ tự động:
-- Kiểm tra phiên bản Python và Docker
-- Tự động sinh file cấu hình `.env` từ file mẫu
-- Tạo môi trường ảo (virtual environment) bằng Python 3.12 và cài các thư viện
-- Tạo container PostgreSQL
-- Hỏi có muốn import data vào DB không (chỉ làm **1 lần duy nhất**)
+Script sẽ tự động:
+- Kiểm tra Python 3.12 và Docker
+- Tạo virtual environment bằng Python 3.12
+- Cài toàn bộ thư viện từ requirements.txt
+- Tạo container PostgreSQL (port 5433)
+- Tạo bảng database tự động
+- Hỏi có muốn import data không (chỉ làm **1 lần duy nhất**)
 
-### Bước 4 — Khởi động server
+> **Lưu ý port:** Dùng port 5433 thay vì 5432 để tránh conflict với PostgreSQL cài sẵn trên máy.
+
+### Bước 5 — Chọn Python interpreter trong IDE
+
+**VS Code / Cursor:**
+1. `Ctrl + Shift + P`
+2. Gõ `Python: Select Interpreter`
+3. Chọn `.\venv\Scripts\python.exe`
+
+Nếu không thấy → bấm **"Enter interpreter path"** → dán:
+```
+.\venv\Scripts\python.exe
+```
+
+### Bước 6 — Khởi động server
 
 ```bash
-# Kích hoạt venv (nếu chưa active)
+# Kích hoạt venv
 venv\Scripts\Activate.ps1
 
 # Chạy server
 uvicorn main:app --reload
 ```
 
-### Bước 5 — Kiểm tra
+### Bước 7 — Kiểm tra
 
-Mở trình duyệt vào: http://localhost:8000/docs
+Mở trình duyệt: http://localhost:8000/docs
 
 Thấy Swagger UI là server đang chạy bình thường.
 
@@ -65,11 +94,45 @@ Thấy Swagger UI là server đang chạy bình thường.
 ```
 1. Mở Docker Desktop
 2. Kiểm tra container: docker ps
-   Nếu không thấy dda-postgres: docker start dda-postgres
+   → Nếu không thấy dda-postgres: docker start dda-postgres
 3. Kích hoạt venv: venv\Scripts\Activate.ps1
 4. Chạy server: uvicorn main:app --reload
 5. Mở http://localhost:8000/docs
 ```
+
+---
+
+## Xử lý lỗi thường gặp
+
+### Lỗi: "password authentication failed for user dda_user"
+
+Máy đang có PostgreSQL cài sẵn ở port 5432 bị conflict. Kiểm tra file `.env`:
+
+```env
+DATABASE_URL=postgresql://dda_user:dda_pass@localhost:5433/dda_db
+```
+
+Đảm bảo port là **5433** không phải 5432.
+
+### Lỗi: "Python 3.12 not found"
+
+Chạy lệnh này để kiểm tra:
+```bash
+py -3.12 --version
+```
+Nếu báo lỗi → cài Python 3.12 tại link ở Bước 2.
+
+### Lỗi: setup.bat tự tắt sau khi cài thư viện
+
+Chạy trực tiếp trong CMD (không double-click):
+```bash
+cd C:\đường-dẫn-đến-project
+setup.bat
+```
+
+### Lỗi: BioBERT load chậm lần đầu
+
+Bình thường — BioBERT model (~400MB) cần 10-15 giây để load vào RAM lần đầu. Từ lần sau sẽ nhanh hơn.
 
 ---
 
@@ -84,7 +147,8 @@ dda-backend/
 │   │   ├── drugs.py         ← CRUD thuốc
 │   │   ├── diseases.py      ← CRUD bệnh
 │   │   ├── predict.py       ← F1, F2 dự đoán
-│   │   └── interactions.py  ← F3 tương tác thuốc
+│   │   ├── interactions.py  ← F3 tương tác thuốc
+│   │   └── oauth.py         ← Google, GitHub OAuth
 │   ├── core/
 │   │   ├── config.py        ← Cấu hình từ .env
 │   │   ├── database.py      ← Kết nối PostgreSQL
@@ -93,13 +157,13 @@ dda-backend/
 │   ├── models/models.py     ← Database models (7 bảng)
 │   └── schemas/schemas.py   ← Request/Response schemas
 ├── ml/
-│   ├── train_lightgbm.py    ← Train LightGBM
+│   ├── train_biobert.py     ← Train BioBERT+LightGBM (Kaggle T4)
+│   ├── train_lightgbm.py    ← Train LightGBM TF-IDF
 │   ├── train_xgboost.py     ← Train XGBoost
-│   ├── train_mlp.py         ← Train MLP (Kaggle)
-│   ├── train_biobert.py     ← Train BioBert (Kaggle) 
-│   ├── evaluate_models.py   ← So sánh 3 models
-│   ├── predictor.py         ← Load model và predict
-│   └── artifacts/           ← Model files (.pkl, .pth)
+│   ├── train_mlp.py         ← Train MLP PyTorch (Kaggle T4)
+│   ├── evaluate_models.py   ← So sánh 4 models
+│   ├── predictor.py         ← DDAPredictor service class
+│   └── artifacts/           ← Model files (.pkl, .npz)
 ├── data/
 │   ├── seed_biosnap.py      ← Import thuốc và bệnh vào DB
 │   ├── seed_ddi.py          ← Import tương tác thuốc vào DB
@@ -133,16 +197,18 @@ dda-backend/
 
 ## ML Models
 
-3 model đã train, lưu tại `ml/artifacts/`:
+4 model đã train, lưu tại `ml/artifacts/`:
 
-| Model | AUC-ROC | F1 | Thư mục |
+| Model | AUC-ROC | F1-Score | Thư mục |
 |---|---|---|---|
-| MLP (PyTorch) | **0.9058** | 0.8288 | `ml/artifacts/mlp/` |
-| LightGBM | 0.8999 | 0.8174 | `ml/artifacts/lightgbm/` |
-| XGBoost | 0.8335 | 0.7360 | `ml/artifacts/xgboost/` |
-| BioBert | 0.8999 | 0.9632 | `ml/artifacts/biobert/` |
+| **BioBERT + LightGBM** | **0.9632** | **0.9014** | `ml/artifacts/biobert/` |
+| MLP (PyTorch) | 0.9058 | 0.8288 | `ml/artifacts/mlp/` |
+| LightGBM (TF-IDF) | 0.8999 | 0.8174 | `ml/artifacts/lightgbm/` |
+| XGBoost (TF-IDF) | 0.8335 | 0.7360 | `ml/artifacts/xgboost/` |
 
-Model mặc định dùng trong API: **biobert** (cân bằng tốt giữa tốc độ và độ chính xác).
+Model mặc định dùng trong API: **BioBERT + LightGBM**
+
+> **Lưu ý:** Model artifacts không được commit lên GitHub do kích thước lớn. Download từ Release và giải nén vào `ml/artifacts/`.
 
 ---
 
@@ -158,6 +224,8 @@ Model mặc định dùng trong API: **biobert** (cân bằng tốt giữa tốc
 | PUT | `/auth/change-password` | Đổi mật khẩu | Cần token |
 | GET | `/auth/history` | Xem lịch sử dự đoán | Cần token |
 | DELETE | `/auth/history/{id}` | Xóa một record lịch sử | Cần token |
+| GET | `/auth/google/login` | Đăng nhập qua Google | Không |
+| GET | `/auth/github/login` | Đăng nhập qua GitHub | Không |
 
 ### F1 — Dự đoán cặp thuốc-bệnh
 
@@ -176,8 +244,6 @@ POST /predict/single
 **Response:**
 ```json
 {
-  "drug_id": 1,
-  "disease_id": 1,
   "drug_name": "Aspirin",
   "disease_name": "Type 2 Diabetes",
   "score": 0.2537,
@@ -185,100 +251,34 @@ POST /predict/single
 }
 ```
 
-**Confidence levels:**
-- `High` — score ≥ 0.7
-- `Medium` — 0.4 ≤ score < 0.7
-- `Low` — score < 0.4
+**Confidence levels:** `High` (≥0.7) · `Medium` (0.4–0.7) · `Low` (<0.4)
 
 **Luồng Frontend:**
-1. Gọi `GET /drugs/search?name=<tên thuốc>` để lấy `drug_id`
-2. Gọi `GET /diseases/search?name=<tên bệnh>` để lấy `disease_id`
-3. Gọi `POST /predict/single` với 2 ID trên
+```
+GET /drugs/search?name=xxx   → lấy drug_id
+GET /diseases/search?name=xxx → lấy disease_id
+POST /predict/single {drug_id, disease_id}
+```
 
----
-
-### F2 — Top 5 thuốc liên kết cao nhất với bệnh
+### F2 — Top 5 thuốc theo bệnh
 
 ```
 GET /predict/top5/{disease_id}
 ```
 
-**Response:**
-```json
-{
-  "disease_id": 1,
-  "disease_name": "Type 2 Diabetes",
-  "top_drugs": [
-    {
-      "drug_id": 8,
-      "drug_name": "Simvastatin",
-      "score": 0.6977,
-      "confidence": "Medium"
-    }
-  ]
-}
-```
-
-**Luồng Frontend:**
-1. Gọi `GET /diseases/search?name=<tên bệnh>` để lấy `disease_id`
-2. Gọi `GET /predict/top5/{disease_id}`
-
----
-
 ### F3 — Kiểm tra tương tác thuốc
 
 ```
 POST /interactions/check
+Body: { "drug_names": ["Aspirin", "Warfarin", "Metformin"] }
+Giới hạn: tối đa 10 thuốc
 ```
-
-**Request:**
-```json
-{
-  "drug_names": ["Aspirin", "Warfarin", "Metformin"]
-}
-```
-
-**Response:**
-```json
-{
-  "total_drugs": 3,
-  "total_pairs_checked": 3,
-  "interactions_found": 1,
-  "interactions": [
-    {
-      "drug_a": "Aspirin",
-      "drug_b": "Warfarin",
-      "description": "Aspirin may increase the anticoagulant activities of Warfarin.",
-      "source": "TWOSIDES"
-    }
-  ]
-}
-```
-
-**Giới hạn:** Tối đa 10 thuốc mỗi lần kiểm tra.
-
----
-
-### Drugs & Diseases (CRUD + Search)
-
-| Method | Endpoint | Mô tả |
-|---|---|---|
-| GET | `/drugs/` | Danh sách thuốc (có phân trang) |
-| GET | `/drugs/search?name=<tên>` | Tìm kiếm thuốc theo tên |
-| GET | `/drugs/{drug_id}` | Lấy thông tin 1 thuốc |
-| POST | `/drugs/` | Tạo thuốc mới |
-| PUT | `/drugs/{drug_id}` | Cập nhật thuốc |
-| DELETE | `/drugs/{drug_id}` | Xóa thuốc |
-| GET | `/diseases/` | Danh sách bệnh |
-| GET | `/diseases/search?name=<tên>` | Tìm kiếm bệnh theo tên |
-| GET | `/diseases/{disease_id}` | Lấy thông tin 1 bệnh |
 
 ### Admin (Cần role admin)
 
 | Method | Endpoint | Mô tả |
 |---|---|---|
 | GET | `/admin/users` | Danh sách tất cả users |
-| GET | `/admin/users/{id}` | Thông tin 1 user |
 | PATCH | `/admin/users/{id}/role` | Đổi role (user/admin) |
 | PATCH | `/admin/users/{id}/status` | Kích hoạt/vô hiệu hóa |
 | DELETE | `/admin/users/{id}` | Xóa user |
@@ -286,63 +286,57 @@ POST /interactions/check
 
 ---
 
-## Hướng dẫn cho Frontend 
-
-### Luồng autocomplete tên thuốc/bệnh
-
-```
-User gõ tên → GET /drugs/search?name=xxx → hiện dropdown
-User chọn  → Frontend giữ drug_id
-Bấm Predict → POST /predict/single với {drug_id, disease_id}
-```
+## Hướng dẫn cho Frontend
 
 ### Luồng Authentication
 
 ```
-1. POST /auth/register → tạo tài khoản
+1. POST /auth/register hoặc /auth/google/login hoặc /auth/github/login
 2. POST /auth/login → nhận access_token
 3. Lưu token vào localStorage
-4. Mọi request cần auth → thêm header: Authorization:  <token>
-> Để sử dụng các chức năng của Admin thì nhớ cop token và dán vào Authorization 
-5. GET /auth/me → lấy thông tin user hiện tại
+4. Mọi request cần auth → thêm header:
+   Authorization: Bearer <token>
+5. GET /auth/me → lấy thông tin và role của user
 ```
 
 ### Phân quyền
 
 ```
-Guest  → chỉ xem trang giới thiệu, đăng ký, đăng nhập
-User   → dùng F1, F2, F3, xem lịch sử
+Guest  → đăng ký, đăng nhập
+User   → F1, F2, F3, lịch sử, đổi mật khẩu
 Admin  → tất cả quyền User + /admin/* routes
 ```
 
+### OAuth Callback
+
+Sau khi OAuth thành công, backend redirect về:
+```
+{FRONTEND_URL}/oauth/callback?token=JWT_TOKEN&username=USERNAME
+```
+Frontend cần có trang `/oauth/callback` để nhận token và lưu vào localStorage.
+
 ---
 
-## Tài khoản test
-## Chạy lệnh này để tạo acc admin
+## Tạo tài khoản Admin
+
+```bash
 python -c "
-import sys
-sys.path.append('.')
+import sys; sys.path.append('.')
 from app.core.database import SessionLocal
 from app.core.security import hash_password
 from app.models.models import User
-
 db = SessionLocal()
-admin = User(
-    username='superadmin',
-    email='admin@dda.com',
-    password=hash_password('admin123'),
-    role='admin',
-    is_active=1
-)
-db.add(admin)
+db.add(User(username='superadmin', email='admin@dda.com',
+            password=hash_password('admin123'), role='admin', is_active=1))
 db.commit()
 print('Admin created!')
 db.close()
 "
-
-> Tạo tài khoản user thường qua `POST /auth/register`
-
+```
 
 ---
 
 ## Liên hệ
+
+- Backend/ML: [Tên K]
+- Frontend/PM: [Tên Anh]
