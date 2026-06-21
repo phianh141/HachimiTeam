@@ -18,9 +18,10 @@ const AdminPermissions = () => {
               <span className="text-2xl font-bold text-slate-900 tracking-tight">Medical Research Platform</span>
             </div>
             <nav className="hidden md:flex items-center gap-10">
-              <Link className="text-slate-600 hover:text-[#0052CC] transition-colors text-lg font-bold" to="/">Trang chủ</Link>
-              <Link className="text-[#0052CC] border-b-2 border-[#0052CC] transition-colors text-lg font-bold pb-1" to="/admin/dashboard">Quản lý</Link>
-              <Link className="text-slate-600 hover:text-[#0052CC] transition-colors text-lg font-bold" to="/admin/reports">Báo cáo</Link>
+              <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/">Trang chủ</Link>
+              <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/dashboard/predict-single">Dự đoán cặp</Link>
+              <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/dashboard/predict-top5">Top Thuốc</Link>
+              <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/dashboard/interactions">Tương tác</Link>
             </nav>
           </div>
 
@@ -58,6 +59,10 @@ const AdminPermissions = () => {
             <Link className="flex items-center gap-4 px-6 py-4 rounded-xl bg-[#0052CC] text-white font-bold text-base shadow-md" to="/admin/permissions">
               <span className="material-symbols-outlined text-[26px]">admin_panel_settings</span>
               Quyền truy cập
+            </Link>
+            <Link className="flex items-center gap-4 px-6 py-4 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors font-bold text-base" to="/admin/reports">
+              <span className="material-symbols-outlined text-[26px]">analytics</span>
+              Báo cáo
             </Link>
             <Link className="flex items-center gap-4 px-6 py-4 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors font-bold text-base" to="/admin/settings">
               <span className="material-symbols-outlined text-[26px]">settings</span>

@@ -24,9 +24,9 @@ const LandingPage = () => {
 
           <nav className="hidden md:flex items-center gap-10">
             <Link to="/" className="text-blue-600 text-lg font-bold border-b-2 border-blue-600 pb-1">Trang chủ</Link>
-            <Link to="/dashboard/predict-single" className="text-slate-600 text-lg hover:text-blue-600 transition-colors font-medium">Dự đoán cặp</Link>
-            <Link to="/dashboard/predict-top5" className="text-slate-600 text-lg hover:text-blue-600 transition-colors font-medium">Top Thuốc</Link>
-            <Link to="/dashboard/interactions" className="text-slate-600 text-lg hover:text-blue-600 transition-colors font-medium">Tương tác</Link>
+            <Link to={user ? "/dashboard/predict-single" : "/login"} className="text-slate-600 text-lg hover:text-blue-600 transition-colors font-medium">Dự đoán cặp</Link>
+            <Link to={user ? "/dashboard/predict-top5" : "/login"} className="text-slate-600 text-lg hover:text-blue-600 transition-colors font-medium">Top Thuốc</Link>
+            <Link to={user ? "/dashboard/interactions" : "/login"} className="text-slate-600 text-lg hover:text-blue-600 transition-colors font-medium">Tương tác</Link>
           </nav>
 
             <div className="flex items-center gap-8">
@@ -111,55 +111,55 @@ const LandingPage = () => {
 
         <div className="grid md:grid-cols-3 gap-10">
           {/* Card 1 */}
-          <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden hover:shadow-2xl transition-all duration-300 group">
+          <Link to={user ? "/dashboard/predict-single" : "/login"} className="block bg-white rounded-3xl border border-slate-200 overflow-hidden hover:shadow-2xl transition-all duration-300 group cursor-pointer">
             <div className="relative h-64 bg-slate-100 overflow-hidden">
               <span className="absolute top-5 left-5 z-10 px-4 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg text-sm font-bold text-slate-800 shadow-sm">Start</span>
               <img src="https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Dự đoán cặp" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             </div>
             <div className="p-10">
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">Dự đoán cặp</h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-3 group-hover:text-blue-600 transition-colors">Dự đoán cặp</h3>
               <p className="text-slate-600 text-lg mb-8 line-clamp-2">Tìm cặp thuốc-bệnh tiềm năng dựa trên các mô hình máy học chuyên sâu.</p>
               <div className="flex gap-4 text-slate-400">
-                <LinkIcon className="w-6 h-6" />
-                <BarChart2 className="w-6 h-6" />
-                <ShieldCheck className="w-6 h-6" />
+                <LinkIcon className="w-6 h-6 group-hover:text-blue-500 transition-colors" />
+                <BarChart2 className="w-6 h-6 group-hover:text-blue-500 transition-colors" />
+                <ShieldCheck className="w-6 h-6 group-hover:text-blue-500 transition-colors" />
               </div>
             </div>
-          </div>
+          </Link>
 
           {/* Card 2 */}
-          <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden hover:shadow-2xl transition-all duration-300 group">
-            <div className="relative h-64 bg-orange-100 overflow-hidden">
+          <Link to={user ? "/dashboard/predict-top5" : "/login"} className="block bg-white rounded-3xl border border-slate-200 overflow-hidden hover:shadow-2xl transition-all duration-300 group cursor-pointer">
+            <div className="relative h-64 bg-blue-100 overflow-hidden">
               <span className="absolute top-5 left-5 z-10 px-4 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg text-sm font-bold text-slate-800 shadow-sm">Ranking</span>
               <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Top Thuốc" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             </div>
             <div className="p-10">
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">Top Thuốc</h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-3 group-hover:text-blue-600 transition-colors">Top Thuốc</h3>
               <p className="text-slate-600 text-lg mb-8 line-clamp-2">Xếp hạng các loại thuốc phù hợp và có tiềm năng điều trị cao nhất cho một loại bệnh.</p>
               <div className="flex gap-4 text-slate-400">
-                <LinkIcon className="w-6 h-6" />
-                <BarChart2 className="w-6 h-6" />
-                <ShieldCheck className="w-6 h-6" />
+                <LinkIcon className="w-6 h-6 group-hover:text-blue-500 transition-colors" />
+                <BarChart2 className="w-6 h-6 group-hover:text-blue-500 transition-colors" />
+                <ShieldCheck className="w-6 h-6 group-hover:text-blue-500 transition-colors" />
               </div>
             </div>
-          </div>
+          </Link>
 
           {/* Card 3 */}
-          <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden hover:shadow-2xl transition-all duration-300 group">
+          <Link to={user ? "/dashboard/interactions" : "/login"} className="block bg-white rounded-3xl border border-slate-200 overflow-hidden hover:shadow-2xl transition-all duration-300 group cursor-pointer">
             <div className="relative h-64 bg-blue-100 overflow-hidden">
               <span className="absolute top-5 left-5 z-10 px-4 py-1.5 bg-white/90 backdrop-blur-sm rounded-lg text-sm font-bold text-slate-800 shadow-sm">Safety</span>
               <img src="https://images.unsplash.com/photo-1628771065518-0d82f1938462?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Kiểm tra Tương tác" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
             </div>
             <div className="p-10">
-              <h3 className="text-2xl font-bold text-slate-900 mb-3">Kiểm tra Tương tác</h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-3 group-hover:text-blue-600 transition-colors">Kiểm tra Tương tác</h3>
               <p className="text-slate-600 text-lg mb-8 line-clamp-2">Đánh giá nguy cơ và mức độ tương tác, phản ứng chéo giữa các loại thuốc với nhau.</p>
               <div className="flex gap-4 text-slate-400">
-                <LinkIcon className="w-6 h-6" />
-                <BarChart2 className="w-6 h-6" />
-                <ShieldCheck className="w-6 h-6" />
+                <LinkIcon className="w-6 h-6 group-hover:text-blue-500 transition-colors" />
+                <BarChart2 className="w-6 h-6 group-hover:text-blue-500 transition-colors" />
+                <ShieldCheck className="w-6 h-6 group-hover:text-blue-500 transition-colors" />
               </div>
             </div>
-          </div>
+          </Link>
         </div>
       </section>
 
@@ -201,12 +201,12 @@ const LandingPage = () => {
 
             {/* Step 3 */}
             <div className="flex items-start gap-8 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-lg transition-shadow">
-              <div className="w-20 h-20 shrink-0 bg-orange-100 rounded-2xl flex items-center justify-center">
-                <Search className="text-orange-600 w-10 h-10" />
+              <div className="w-20 h-20 shrink-0 bg-blue-100 rounded-2xl flex items-center justify-center">
+                <Search className="text-blue-600 w-10 h-10" />
               </div>
               <div>
                 <h4 className="text-2xl font-bold text-slate-900 mb-2">3) Xem & kiểm tra tương tác</h4>
-                <p className="text-base font-medium text-orange-600 mb-3">Định hướng thí nghiệm / ra quyết định</p>
+                <p className="text-base font-medium text-blue-600 mb-3">Định hướng thí nghiệm / ra quyết định</p>
                 <p className="text-slate-600 text-base leading-relaxed">Lọc kết quả, mở chi tiết liên kết, sau đó đối chiếu tương tác thuốc nhằm giảm rủi ro trong lựa chọn.</p>
               </div>
             </div>

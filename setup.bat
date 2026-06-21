@@ -69,7 +69,7 @@ set /p "role_choice=[?] Nhap lua chon cua ban (1 hoac 2): "
 
 if "%role_choice%"=="1" (
     echo.
-    echo Cai dat thu vien cho Developer (day du)...
+    echo Cai dat thu vien cho Developer [day du]...
     pip install -r requirements-dev.txt
     if %errorlevel% neq 0 (
         echo [!] Loi khi cai thu vien.
@@ -82,7 +82,7 @@ if "%role_choice%"=="1" (
 
 if "%role_choice%"=="2" (
     echo.
-    echo Cai dat thu vien cho Frontend/Member (toi gian)...
+    echo Cai dat thu vien cho Frontend/Member [toi gian]...
     pip install -r requirements.txt
     if %errorlevel% neq 0 (
         echo [!] Loi khi cai thu vien.
@@ -102,7 +102,7 @@ goto ask_role
 echo.
 docker ps -a --filter "name=dda-postgres" --format "{{.Names}}" | findstr "dda-postgres" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo Tao container PostgreSQL moi (port 5433)...
+    echo Tao container PostgreSQL moi [port 5433]...
     docker run -d --name dda-postgres ^
         -e POSTGRES_USER=dda_user ^
         -e POSTGRES_PASSWORD=dda_pass ^
@@ -150,7 +150,7 @@ if /i "%user_choice%"=="y" (
         goto end_import
     )
 
-    echo Dang import BioSNAP data (thuoc + benh)... Co the mat 5-10 phut.
+    echo Dang import BioSNAP data [thuoc + benh]... Co the mat 5-10 phut.
     python data\seed_biosnap.py
     if %errorlevel% neq 0 (
         echo [!] Loi khi import BioSNAP data.
@@ -158,7 +158,7 @@ if /i "%user_choice%"=="y" (
     )
     echo [ok] BioSNAP data imported.
 
-    echo Dang import DDI data (tuong tac thuoc)... Co the mat 2-3 phut.
+    echo Dang import DDI data [tuong tac thuoc]... Co the mat 2-3 phut.
     python data\seed_ddi.py
     if %errorlevel% neq 0 (
         echo [!] Loi khi import DDI data.

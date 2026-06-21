@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -8,6 +8,9 @@ from app.core.security import (
     hash_password, verify_password,
     create_access_token, decode_access_token
 )
+import shutil
+import uuid
+import os
 from app.models.models import User
 from app.schemas.schemas import (
     UserRegister, UserResponse,
@@ -17,7 +20,7 @@ from pydantic import BaseModel
 from app.schemas.schemas import (
     UserRegister, UserResponse,
     TokenResponse, LoginRequest,
-    ChangePasswordRequest
+    ChangePasswordRequest, UpdateProfileRequest
 )
 
 
@@ -60,7 +63,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     """Đăng nhập và nhận JWT token"""
     user = db.query(User).filter(User.email == request.email).first()
 
-    if not user or not verify_password(request.password, user.password):
+    if not user or not verify_password(request.password, str(user.password)):
         raise HTTPException(
             status_code=401,
             detail="Email hoặc mật khẩu không đúng"
@@ -77,13 +80,7 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     return TokenResponse(
         access_token=token,
         token_type="bearer",
-        user=UserResponse(
-            user_id=user.user_id,
-            username=user.username,
-            email=user.email,
-            role=user.role,
-            is_active=user.is_active
-        )
+        user=UserResponse.model_validate(user)
     )
 
 
@@ -193,7 +190,7 @@ def change_password(
         raise HTTPException(status_code=404, detail="Không tìm thấy user")
 
     # Kiểm tra password hiện tại
-    if not verify_password(request.current_password, user.password):
+    if not verify_password(request.current_password, str(user.password)):
         raise HTTPException(status_code=400, detail="Mật khẩu hiện tại không đúng")
 
     # Kiểm tra password mới không trùng password cũ
@@ -204,7 +201,82 @@ def change_password(
     if len(request.new_password) < 6:
         raise HTTPException(status_code=400, detail="Mật khẩu mới phải có ít nhất 6 ký tự")
 
-    user.password = hash_password(request.new_password)
+    user.password = hash_password(request.new_password) # type: ignore
     db.commit()
 
     return {"message": "Đổi mật khẩu thành công"}
+
+
+@router.put("/update-profile", response_model=UserResponse)
+def update_profile(
+    request: UpdateProfileRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    """Cập nhật thông tin user hiện tại"""
+    payload = decode_access_token(credentials.credentials)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Token không hợp lệ")
+
+    user = db.query(User).filter(User.user_id == int(payload["sub"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy user")
+
+    # Kiểm tra xem username mới có bị trùng không
+    if request.username != user.username:
+        existing_user = db.query(User).filter(User.username == request.username).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Username đã được sử dụng bởi người khác")
+        
+        user.username = request.username # type: ignore
+        db.commit()
+        db.refresh(user)
+
+    return user
+
+
+@router.post("/upload-avatar", response_model=UserResponse)
+def upload_avatar(
+    file: UploadFile = File(...),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    """Upload và cập nhật ảnh đại diện"""
+    payload = decode_access_token(credentials.credentials)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Token không hợp lệ")
+
+    user = db.query(User).filter(User.user_id == int(payload["sub"])).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy user")
+
+    # Kiểm tra định dạng file
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="File upload không hợp lệ")
+
+    allowed_extensions = ["jpg", "jpeg", "png", "gif"]
+    file_ext = file.filename.split(".")[-1].lower()
+    if file_ext not in allowed_extensions:
+        raise HTTPException(status_code=400, detail="Định dạng file không được hỗ trợ. Chỉ chấp nhận JPG, PNG, GIF.")
+
+    # Lưu file
+    filename = f"{uuid.uuid4()}.{file_ext}"
+    file_path = f"app/static/avatars/{filename}"
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    # Xóa ảnh cũ nếu có
+    if user.avatar_url:
+        old_file_path = f"app{user.avatar_url}"
+        if os.path.exists(old_file_path):
+            try:
+                os.remove(old_file_path)
+            except Exception:
+                pass
+                
+    user.avatar_url = f"/static/avatars/{filename}" # type: ignore
+    db.commit()
+    db.refresh(user)
+
+    return user

@@ -13,6 +13,7 @@ import Interactions from './pages/Interactions';
 import History from './pages/History';
 import Dictionary from './pages/Dictionary';
 import Profile from './pages/Profile';
+import OAuthCallback from './pages/OAuthCallback';
 
 // Thêm Component của Admin
 import AdminDashboard from './pages/AdminDashboard';
@@ -31,6 +32,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/dictionary" element={<Dictionary />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/oauth/callback" element={<OAuthCallback />} />
 
         {/* Khung User - Đã gỡ bỏ bọc DashboardLayout để full màn hình */}
         <Route path="/dashboard" element={<Navigate to="/dashboard/predict-single" replace />} />

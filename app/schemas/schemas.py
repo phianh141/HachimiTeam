@@ -95,6 +95,7 @@ class UserResponse(BaseModel):
     email: str
     role: str
     is_active: int
+    avatar_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -114,6 +115,9 @@ class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
 
+class UpdateProfileRequest(BaseModel):
+    username: str
+
 # =============================================
 # PREDICTION HISTORY SCHEMAS
 # =============================================
@@ -131,3 +135,4 @@ class PredictionHistoryResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        protected_namespaces = ()

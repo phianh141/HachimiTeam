@@ -74,6 +74,7 @@ class User(Base):
     password   = Column(String(255), nullable=False)  # lưu hashed password
     role       = Column(String(20), default="user")   # "user" hoặc "admin"
     is_active  = Column(SmallInteger, default=1)
+    avatar_url = Column(String(255), nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.now())
 
 

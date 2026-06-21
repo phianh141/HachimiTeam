@@ -1,9 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../utils/api';
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
+  const [stats, setStats] = useState({
+    total_users: 0,
+    active_users: 0,
+    total_drugs: 0,
+    total_predictions: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await api.get('/admin/stats');
+        setStats(res.data);
+      } catch (err) {
+        console.error('Lỗi khi lấy thống kê:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
   return (
     <div className="bg-[#FAFAFA] text-slate-900 text-base min-h-screen flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
 
@@ -20,9 +42,10 @@ const AdminDashboard = () => {
               <span className="text-2xl font-bold text-slate-900 tracking-tight">Medical Research Platform</span>
             </div>
             <nav className="hidden md:flex items-center gap-10">
-              <Link className="text-slate-600 hover:text-[#0052CC] transition-colors text-lg font-bold" to="/">Trang chủ</Link>
-              <Link className="text-[#0052CC] border-b-2 border-[#0052CC] transition-colors text-lg font-bold pb-1" to="/admin/dashboard">Quản lý</Link>
-              <Link className="text-slate-600 hover:text-[#0052CC] transition-colors text-lg font-bold" to="/admin/reports">Báo cáo</Link>
+              <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/">Trang chủ</Link>
+              <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/dashboard/predict-single">Dự đoán cặp</Link>
+              <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/dashboard/predict-top5">Top Thuốc</Link>
+              <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/dashboard/interactions">Tương tác</Link>
             </nav>
           </div>
 
@@ -76,6 +99,10 @@ const AdminDashboard = () => {
               <span className="material-symbols-outlined text-[26px]">admin_panel_settings</span>
               Quyền truy cập
             </Link>
+            <Link className="flex items-center gap-4 px-6 py-4 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors font-bold text-base" to="/admin/reports">
+              <span className="material-symbols-outlined text-[26px]">analytics</span>
+              Báo cáo
+            </Link>
             <Link className="flex items-center gap-4 px-6 py-4 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors font-bold text-base" to="/admin/settings">
               <span className="material-symbols-outlined text-[26px]">settings</span>
               Cài đặt
@@ -101,10 +128,11 @@ const AdminDashboard = () => {
                 <span className="text-base font-bold text-slate-600">Tổng người dùng</span>
                 <span className="material-symbols-outlined text-[28px] text-slate-400 group-hover:text-[#0052CC] transition-colors">group</span>
               </div>
-              <div className="text-[40px] font-black text-slate-900 mb-4 tracking-tight">12,482</div>
-              <div className="text-base font-bold text-[#0052CC] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px]">trending_up</span>
-                +8.2% tháng này
+              <div className="text-[40px] font-black text-slate-900 mb-4 tracking-tight">
+                {loading ? "..." : stats.total_users.toLocaleString()}
+              </div>
+              <div className="text-base font-bold text-slate-400 flex items-center gap-2">
+                Cập nhật theo thời gian thực
               </div>
             </div>
 
@@ -114,10 +142,11 @@ const AdminDashboard = () => {
                 <span className="text-base font-bold text-slate-600">Đang hoạt động</span>
                 <span className="material-symbols-outlined text-[28px] text-slate-400 group-hover:text-[#0052CC] transition-colors">moving</span>
               </div>
-              <div className="text-[40px] font-black text-slate-900 mb-4 tracking-tight">3,216</div>
-              <div className="text-base font-bold text-[#0052CC] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px]">trending_up</span>
-                +1.1% 24h
+              <div className="text-[40px] font-black text-slate-900 mb-4 tracking-tight">
+                {loading ? "..." : stats.active_users.toLocaleString()}
+              </div>
+              <div className="text-base font-bold text-slate-400 flex items-center gap-2">
+                Tài khoản không bị khóa
               </div>
             </div>
 
@@ -127,10 +156,11 @@ const AdminDashboard = () => {
                 <span className="text-base font-bold text-slate-600">Tổng số thuốc</span>
                 <span className="material-symbols-outlined text-[28px] text-slate-400 group-hover:text-[#0052CC] transition-colors">medication</span>
               </div>
-              <div className="text-[40px] font-black text-slate-900 mb-4 tracking-tight">856</div>
-              <div className="text-base font-bold text-[#0052CC] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px]">add</span>
-                +12 hôm nay
+              <div className="text-[40px] font-black text-slate-900 mb-4 tracking-tight">
+                {loading ? "..." : stats.total_drugs.toLocaleString()}
+              </div>
+              <div className="text-base font-bold text-slate-400 flex items-center gap-2">
+                Dữ liệu có trong hệ thống
               </div>
             </div>
 
@@ -140,10 +170,11 @@ const AdminDashboard = () => {
                 <span className="text-base font-bold text-slate-600">Tổng số lượt dự đoán</span>
                 <span className="material-symbols-outlined text-[28px] text-slate-400 group-hover:text-[#0052CC] transition-colors">analytics</span>
               </div>
-              <div className="text-[40px] font-black text-slate-900 mb-4 tracking-tight">27,904</div>
-              <div className="text-base font-bold text-[#0052CC] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px]">trending_up</span>
-                +3.7% 7 ngày
+              <div className="text-[40px] font-black text-slate-900 mb-4 tracking-tight">
+                {loading ? "..." : stats.total_predictions.toLocaleString()}
+              </div>
+              <div className="text-base font-bold text-slate-400 flex items-center gap-2">
+                Kết quả đã phân tích
               </div>
             </div>
 
@@ -198,8 +229,7 @@ const AdminDashboard = () => {
                   <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-3 py-1.5 rounded-lg text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">6,500</div>
                 </div>
 
-                {/* Active Highlighted Bar */}
-                <div className="w-10 sm:w-16 bg-[#0052CC] h-[90%] rounded-t-lg z-10 relative group shadow-md">
+                <div className="w-10 sm:w-16 bg-slate-500 h-[90%] rounded-t-lg z-10 hover:bg-[#0052CC] transition-colors relative group">
                   <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-3 py-1.5 rounded-lg text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-lg">9,000</div>
                 </div>
 

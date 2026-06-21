@@ -10,6 +10,9 @@ const Interactions = () => {
   const [selectedDrugs, setSelectedDrugs] = useState([]);
   const [currentInput, setCurrentInput] = useState('');
   
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [results, setResults] = useState(null);
@@ -17,7 +20,7 @@ const Interactions = () => {
   useEffect(() => {
     const fetchDrugs = async () => {
       try {
-        const res = await api.get('/drugs');
+        const res = await api.get('/drugs?limit=50');
         setDrugs(res.data);
       } catch (err) {
         console.error('Lỗi khi tải danh sách thuốc:', err);
@@ -26,30 +29,54 @@ const Interactions = () => {
     fetchDrugs();
   }, []);
 
-  const handleAddDrug = () => {
+  useEffect(() => {
+    if (currentInput.length >= 2) {
+      setIsSearching(true);
+      api.get(`/drugs/search?name=${currentInput}`)
+         .then(res => {
+           setDrugs(res.data);
+           if (res.data.length === 1 && res.data[0].drug_name === currentInput) {
+             setShowDropdown(false);
+           } else {
+             setShowDropdown(true);
+           }
+         })
+         .catch(() => {})
+         .finally(() => setIsSearching(false));
+    } else {
+      setShowDropdown(false);
+    }
+  }, [currentInput]);
+
+  const handleAddDrug = async () => {
     if (!currentInput.trim()) return;
     
-    // Check if valid drug
-    const drug = drugs.find(d => d.drug_name.toLowerCase() === currentInput.toLowerCase());
-    if (!drug) {
-      setError(`Thuốc "${currentInput}" không tồn tại trong hệ thống.`);
-      return;
-    }
+    try {
+      const res = await api.get(`/drugs/search?name=${currentInput}`);
+      const drug = res.data.find(d => d.drug_name.toLowerCase() === currentInput.toLowerCase());
+      
+      if (!drug) {
+        setError(`Thuốc "${currentInput}" không tồn tại trong hệ thống.`);
+        return;
+      }
 
-    if (selectedDrugs.includes(drug.drug_name)) {
-      setError(`Thuốc "${drug.drug_name}" đã được chọn.`);
-      return;
-    }
+      if (selectedDrugs.includes(drug.drug_name)) {
+        setError(`Thuốc "${drug.drug_name}" đã được chọn.`);
+        return;
+      }
 
-    if (selectedDrugs.length >= 10) {
-      setError('Bạn chỉ có thể chọn tối đa 10 thuốc.');
-      return;
-    }
+      if (selectedDrugs.length >= 10) {
+        setError('Bạn chỉ có thể chọn tối đa 10 thuốc.');
+        return;
+      }
 
-    setSelectedDrugs([...selectedDrugs, drug.drug_name]);
-    setCurrentInput('');
-    setError('');
-    setResults(null);
+      setSelectedDrugs([...selectedDrugs, drug.drug_name]);
+      setCurrentInput('');
+      setError('');
+      setResults(null);
+    } catch (err) {
+      setError('Lỗi khi kiểm tra thuốc.');
+    }
   };
 
   const handleRemoveDrug = (drugName) => {
@@ -222,19 +249,43 @@ const Interactions = () => {
                   <h3 className="font-bold text-2xl text-slate-900 mb-1">Thêm thuốc</h3>
                   <p className="text-base text-slate-500 mb-4">Tìm kiếm theo tên hoạt chất hoặc biệt dược.</p>
                   <div className="relative w-full flex gap-3">
-                    <input 
-                      list="drugs-list"
-                      className="w-full p-4 border border-slate-300 rounded-2xl text-lg focus:ring-2 focus:ring-[#0052CC] focus:border-[#0052CC] shadow-inner transition-all" 
-                      placeholder='Gõ để tìm kiếm...' 
-                      value={currentInput}
-                      onChange={(e) => setCurrentInput(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                    />
-                    <datalist id="drugs-list">
-                      {drugs.map(d => (
-                        <option key={d.drug_id} value={d.drug_name} />
-                      ))}
-                    </datalist>
+                    <div className="relative flex-grow">
+                      <input 
+                        className="w-full p-4 border border-slate-300 rounded-2xl text-lg focus:ring-2 focus:ring-[#0052CC] focus:border-[#0052CC] shadow-inner transition-all" 
+                        placeholder='Gõ để tìm kiếm...' 
+                        value={currentInput}
+                        onChange={(e) => setCurrentInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        onFocus={() => { if (currentInput.length >= 2) setShowDropdown(true); }}
+                        onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                      />
+                      {isSearching && (
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#0052CC]"></div>
+                        </div>
+                      )}
+                      {showDropdown && drugs.length > 0 && (
+                        <ul className="absolute z-10 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+                          {drugs.map(d => (
+                            <li 
+                              key={d.drug_id} 
+                              className="px-5 py-3 hover:bg-slate-50 cursor-pointer text-gray-700 font-medium border-b border-slate-50 last:border-b-0 transition-colors"
+                              onMouseDown={() => {
+                                setCurrentInput(d.drug_name);
+                                setShowDropdown(false);
+                              }}
+                            >
+                              {d.drug_name}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {showDropdown && drugs.length === 0 && currentInput.length >= 2 && !isSearching && (
+                        <div className="absolute z-10 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl p-4 text-center text-gray-500">
+                          Không tìm thấy thuốc phù hợp
+                        </div>
+                      )}
+                    </div>
                     <button 
                       onClick={handleAddDrug}
                       className="bg-slate-100 text-slate-700 px-6 rounded-2xl font-bold hover:bg-slate-200 transition-colors border border-slate-200"
@@ -286,11 +337,24 @@ const Interactions = () => {
                   <div className="lg:col-span-8 space-y-8">
                     {results.interactions.map((interaction, idx) => (
                       <div key={idx} className="bg-white rounded-3xl p-8 lg:p-10 border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col sm:flex-row gap-8 items-start">
-                        <img 
-                          src="/bệnh lý.jpg" 
-                          alt="Bệnh lý" 
-                          className="w-24 h-24 rounded-2xl shrink-0 object-cover bg-slate-50 border border-slate-100 hidden sm:block" 
-                        />
+                        <div className="hidden sm:flex flex-col gap-4 shrink-0">
+                          <div className="w-36 h-36 rounded-2xl bg-white border border-slate-100 p-3 shadow-sm hover:scale-105 transition-transform duration-300 flex items-center justify-center overflow-hidden">
+                            <img 
+                              src={`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${interaction.drug_a}/PNG`} 
+                              onError={(e) => { e.target.onerror = null; e.target.src = "/thuốc đã chọn.png"; }}
+                              alt={interaction.drug_a} 
+                              className="max-w-full max-h-full object-contain drop-shadow-sm" 
+                            />
+                          </div>
+                          <div className="w-36 h-36 rounded-2xl bg-white border border-slate-100 p-3 shadow-sm hover:scale-105 transition-transform duration-300 flex items-center justify-center overflow-hidden">
+                            <img 
+                              src={`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${interaction.drug_b}/PNG`} 
+                              onError={(e) => { e.target.onerror = null; e.target.src = "/thuốc đã chọn.png"; }}
+                              alt={interaction.drug_b} 
+                              className="max-w-full max-h-full object-contain drop-shadow-sm" 
+                            />
+                          </div>
+                        </div>
                         <div className="flex-grow w-full">
                           <div className="flex flex-wrap items-center gap-3 mb-4">
                             <span className="px-4 py-1.5 bg-rose-50 text-rose-700 text-sm font-bold rounded-lg border border-rose-200">

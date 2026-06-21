@@ -49,8 +49,9 @@ const Dictionary = () => {
             </div>
             <nav className="hidden md:flex items-center gap-10">
               <Link className="text-slate-600 hover:text-[#0052CC] transition-colors text-lg font-bold" to="/">Trang chủ</Link>
+              <Link className="text-slate-600 hover:text-[#0052CC] transition-colors text-lg font-bold" to="/dashboard/predict-single">Dự đoán cặp</Link>
               <Link className="text-[#0052CC] border-b-2 border-[#0052CC] transition-colors text-lg font-bold pb-1" to="/dictionary">Từ điển</Link>
-              <Link className="text-slate-600 hover:text-[#0052CC] transition-colors text-lg font-bold" to="/dashboard/predict-single">Dự đoán</Link>
+              <Link className="text-slate-600 hover:text-[#0052CC] transition-colors text-lg font-bold" to="/dashboard/interactions">Tương tác</Link>
             </nav>
           </div>
 

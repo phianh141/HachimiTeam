@@ -8,22 +8,71 @@ const AdminManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/admin/users');
+      setUsers(res.data);
+    } catch (err) {
+      console.error('Lỗi lấy danh sách user:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const res = await api.get('/admin/users');
-        setUsers(res.data);
-      } catch (err) {
-        console.error('Lỗi lấy danh sách user:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchUsers();
   }, []);
 
-  const totalUsers = users.length;
-  const activeUsers = users.filter(u => u.is_active).length;
+  const handleToggleStatus = async (userId, currentStatus) => {
+    try {
+      const newStatus = currentStatus ? 0 : 1;
+      await api.patch(`/admin/users/${userId}/status?is_active=${newStatus}`);
+      setUsers(users.map(u => u.user_id === userId ? { ...u, is_active: newStatus } : u));
+    } catch (err) {
+      alert('Lỗi khi cập nhật trạng thái');
+    }
+  };
+
+  const handleToggleRole = async (userId, currentRole) => {
+    try {
+      const newRole = currentRole === 'admin' ? 'user' : 'admin';
+      if (!window.confirm(`Bạn có chắc muốn đổi quyền của người dùng này thành ${newRole.toUpperCase()}?`)) return;
+      await api.patch(`/admin/users/${userId}/role?role=${newRole}`);
+      setUsers(users.map(u => u.user_id === userId ? { ...u, role: newRole } : u));
+    } catch (err) {
+      alert('Lỗi khi cập nhật quyền hạn');
+    }
+  };
+
+  const handleDelete = async (userId) => {
+    try {
+      if (!window.confirm(`Bạn có chắc chắn muốn XÓA VĨNH VIỄN người dùng này không? Hành động này không thể hoàn tác.`)) return;
+      await api.delete(`/admin/users/${userId}`);
+      setUsers(users.filter(u => u.user_id !== userId));
+    } catch (err) {
+      if (err.response?.data?.detail) alert(err.response.data.detail);
+      else alert('Lỗi khi xóa người dùng');
+    }
+  };
+
+  const filteredUsers = users.filter(u => {
+    const matchSearch = u.username.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        u.user_id.toString().includes(searchQuery);
+    const matchRole = roleFilter === '' || u.role === roleFilter;
+    const matchStatus = statusFilter === '' || 
+                        (statusFilter === 'active' && u.is_active) || 
+                        (statusFilter === 'locked' && !u.is_active);
+    return matchSearch && matchRole && matchStatus;
+  });
+
+  const totalUsers = filteredUsers.length;
+  const activeUsers = filteredUsers.filter(u => u.is_active).length;
   const inactiveUsers = totalUsers - activeUsers;
 
   return (
@@ -42,9 +91,10 @@ const AdminManagement = () => {
               <span className="text-2xl font-bold text-slate-900 tracking-tight">Medical Research Platform</span>
             </div>
             <nav className="hidden md:flex items-center gap-10">
-              <Link className="text-slate-600 hover:text-[#0052CC] transition-colors text-lg font-bold" to="/">Trang chủ</Link>
-              <Link className="text-[#0052CC] border-b-2 border-[#0052CC] transition-colors text-lg font-bold pb-1" to="/admin/dashboard">Quản lý</Link>
-              <Link className="text-slate-600 hover:text-[#0052CC] transition-colors text-lg font-bold" to="/admin/reports">Báo cáo</Link>
+              <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/">Trang chủ</Link>
+              <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/dashboard/predict-single">Dự đoán cặp</Link>
+              <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/dashboard/predict-top5">Top Thuốc</Link>
+              <Link className="text-slate-600 text-lg hover:text-[#0052CC] font-medium transition-colors" to="/dashboard/interactions">Tương tác</Link>
             </nav>
           </div>
 
@@ -99,6 +149,10 @@ const AdminManagement = () => {
               <span className="material-symbols-outlined text-[26px]">admin_panel_settings</span>
               Quyền truy cập
             </Link>
+            <Link className="flex items-center gap-4 px-6 py-4 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors font-bold text-base" to="/admin/reports">
+              <span className="material-symbols-outlined text-[26px]">analytics</span>
+              Báo cáo
+            </Link>
             <Link className="flex items-center gap-4 px-6 py-4 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors font-bold text-base" to="/admin/settings">
               <span className="material-symbols-outlined text-[26px]">settings</span>
               Cài đặt
@@ -121,6 +175,8 @@ const AdminManagement = () => {
                 className="flex-1 bg-transparent border-none focus:ring-0 text-base text-slate-900 placeholder:text-slate-400 outline-none" 
                 placeholder="Tìm kiếm người dùng qua tên, email hoặc ID..." 
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
               <span className="material-symbols-outlined text-slate-400">search</span>
             </div>
@@ -150,34 +206,45 @@ const AdminManagement = () => {
               <div className="flex flex-col gap-2.5">
                 <label className="font-bold text-slate-900">Vai trò</label>
                 <div className="relative">
-                  <select className="w-full appearance-none bg-white border border-slate-300 rounded-xl px-5 py-4 pr-12 text-base text-slate-700 focus:border-[#0052CC] focus:ring-1 focus:ring-[#0052CC] shadow-sm cursor-pointer outline-none">
-                    <option disabled selected value="">Chọn vai trò</option>
+                  <select 
+                    value={roleFilter}
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                    className="w-full appearance-none bg-white border border-slate-300 rounded-xl px-5 py-4 pr-12 text-base text-slate-700 focus:border-[#0052CC] focus:ring-1 focus:ring-[#0052CC] shadow-sm cursor-pointer outline-none"
+                  >
+                    <option value="">Tất cả vai trò</option>
                     <option value="admin">Admin</option>
-                    <option value="staff">Nhân viên</option>
-                    <option value="guest">Khách</option>
+                    <option value="user">User</option>
                   </select>
                   <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
                 </div>
-                <span className="text-sm text-slate-500">VD: Admin, Nhân viên, Khách</span>
+                <span className="text-sm text-slate-500">Lọc theo quyền hạn của tài khoản</span>
               </div>
               
               <div className="flex flex-col gap-2.5">
                 <label className="font-bold text-slate-900">Trạng thái</label>
                 <div className="relative">
-                  <select className="w-full appearance-none bg-white border border-slate-300 rounded-xl px-5 py-4 pr-12 text-base text-slate-700 focus:border-[#0052CC] focus:ring-1 focus:ring-[#0052CC] shadow-sm cursor-pointer outline-none">
-                    <option disabled selected value="">Chọn trạng thái</option>
+                  <select 
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="w-full appearance-none bg-white border border-slate-300 rounded-xl px-5 py-4 pr-12 text-base text-slate-700 focus:border-[#0052CC] focus:ring-1 focus:ring-[#0052CC] shadow-sm cursor-pointer outline-none"
+                  >
+                    <option value="">Tất cả trạng thái</option>
                     <option value="active">Hoạt động</option>
                     <option value="locked">Tạm khóa</option>
                   </select>
                   <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
                 </div>
-                <span className="text-sm text-slate-500">VD: Hoạt động, Tạm khóa</span>
+                <span className="text-sm text-slate-500">Lọc theo trạng thái tài khoản</span>
               </div>
             </div>
             
             <div className="flex gap-4 w-full justify-center mt-2">
-              <button className="px-8 py-3.5 border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors w-40 shadow-sm">Đặt lại</button>
-              <button className="px-8 py-3.5 bg-slate-900 text-white font-bold rounded-xl shadow-md hover:bg-[#0052CC] transition-colors w-44">Áp dụng lọc</button>
+              <button 
+                onClick={() => { setSearchQuery(''); setRoleFilter(''); setStatusFilter(''); }}
+                className="px-8 py-3.5 border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors w-40 shadow-sm"
+              >
+                Đặt lại
+              </button>
             </div>
           </section>
 
@@ -252,7 +319,11 @@ const AdminManagement = () => {
                       <tr>
                         <td colSpan="6" className="p-10 text-center text-slate-500">Đang tải dữ liệu...</td>
                       </tr>
-                    ) : users.map(u => (
+                    ) : filteredUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="p-10 text-center text-slate-500">Không tìm thấy người dùng phù hợp.</td>
+                      </tr>
+                    ) : filteredUsers.map(u => (
                       <tr key={u.user_id} className={`hover:bg-slate-50 transition-colors group ${!u.is_active ? 'opacity-80' : ''}`}>
                         <td className="p-5 text-slate-500 font-mono">USR-{u.user_id.toString().padStart(3, '0')}</td>
                         <td className="p-5 font-bold text-slate-900 flex items-center gap-3">
@@ -279,12 +350,29 @@ const AdminManagement = () => {
                           )}
                         </td>
                         <td className="p-5 text-right">
-                          <button className="text-slate-400 hover:text-[#0052CC] transition-colors p-1" title="Sửa"><span className="material-symbols-outlined text-[20px]">edit</span></button>
-                          {u.is_active ? (
-                            <button className="text-slate-400 hover:text-rose-600 transition-colors p-1 ml-2" title="Khóa"><span className="material-symbols-outlined text-[20px]">lock</span></button>
-                          ) : (
-                            <button className="text-slate-400 hover:text-green-600 transition-colors p-1 ml-2" title="Mở khóa"><span className="material-symbols-outlined text-[20px]">lock_open</span></button>
-                          )}
+                          <button 
+                            onClick={() => handleToggleRole(u.user_id, u.role)}
+                            className="text-slate-400 hover:text-[#0052CC] transition-colors p-1" 
+                            title={u.role === 'admin' ? "Chuyển thành User" : "Cấp quyền Admin"}
+                          >
+                            <span className="material-symbols-outlined text-[20px]">manage_accounts</span>
+                          </button>
+                          
+                          <button 
+                            onClick={() => handleToggleStatus(u.user_id, u.is_active)}
+                            className={`transition-colors p-1 ml-2 ${u.is_active ? 'text-slate-400 hover:text-rose-600' : 'text-slate-400 hover:text-green-600'}`} 
+                            title={u.is_active ? "Khóa tài khoản" : "Mở khóa"}
+                          >
+                            <span className="material-symbols-outlined text-[20px]">{u.is_active ? 'lock' : 'lock_open'}</span>
+                          </button>
+
+                          <button 
+                            onClick={() => handleDelete(u.user_id)}
+                            className="text-slate-400 hover:text-rose-600 transition-colors p-1 ml-2" 
+                            title="Xóa tài khoản"
+                          >
+                            <span className="material-symbols-outlined text-[20px]">delete</span>
+                          </button>
                         </td>
                       </tr>
                     ))}

@@ -1,6 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from app.core.database import engine, Base
 from app.core.config import settings
@@ -14,6 +15,10 @@ app = FastAPI(
     description="Dự đoán liên kết Thuốc - Bệnh dựa trên Machine Learning",
     version="1.0.0"
 )
+
+# Setup static files directory
+os.makedirs("app/static/avatars", exist_ok=True)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.add_middleware(SessionMiddleware, secret_key=settings.secret_key)
 app.add_middleware(
