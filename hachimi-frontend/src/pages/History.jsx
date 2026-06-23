@@ -9,6 +9,8 @@ const History = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all'); // 'all', 'high'
   const [deletingId, setDeletingId] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -28,15 +30,29 @@ const History = () => {
     }
   }, [user]);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa bản ghi này?')) return;
+  const showToast = (message) => {
+    setToastMessage(message);
+    setTimeout(() => {
+      setToastMessage('');
+    }, 3000);
+  };
+
+  const requestDelete = (id) => {
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
+    const id = deleteConfirmId;
     setDeletingId(id);
+    setDeleteConfirmId(null);
     try {
       await api.delete(`/auth/history/${id}`);
       setHistory(prev => prev.filter(item => item.id !== id));
+      showToast('Đã xóa lịch sử tra cứu thành công!');
     } catch (err) {
       console.error('Lỗi khi xóa:', err);
-      alert('Không thể xóa bản ghi. Vui lòng thử lại sau.');
+      showToast('Không thể xóa bản ghi. Vui lòng thử lại sau.');
     } finally {
       setDeletingId(null);
     }
@@ -134,7 +150,7 @@ const History = () => {
                       </td>
                       <td className="px-8 py-5 text-center">
                         <button 
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() => requestDelete(item.id)}
                           disabled={deletingId === item.id}
                           className="w-10 h-10 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50 mx-auto"
                           title="Xóa bản ghi"
@@ -150,6 +166,44 @@ const History = () => {
               </table>
             </div>
           </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl transform transition-all animate-fadeIn">
+            <div className="w-16 h-16 rounded-full bg-rose-100 flex items-center justify-center mx-auto mb-6">
+              <span className="material-symbols-outlined text-3xl text-rose-600">delete_forever</span>
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 text-center mb-2">Xóa lịch sử</h3>
+            <p className="text-slate-500 text-center mb-8">Bạn có chắc chắn muốn xóa bản ghi phân tích này không? Hành động này không thể hoàn tác.</p>
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setDeleteConfirmId(null)}
+                className="flex-1 px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors"
+              >
+                Hủy bỏ
+              </button>
+              <button 
+                onClick={confirmDelete}
+                className="flex-1 px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-rose-600/30"
+              >
+                Xóa ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Toast Popup */}
+      {toastMessage && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] animate-bounce">
+          <div className="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3">
+            <span className="material-symbols-outlined text-emerald-400">check_circle</span>
+            <span className="font-medium text-lg">{toastMessage}</span>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
