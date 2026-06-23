@@ -326,13 +326,48 @@ from app.core.database import SessionLocal
 from app.core.security import hash_password
 from app.models.models import User
 db = SessionLocal()
-db.add(User(username='superadmin', email='admin@dda.com',
-            password=hash_password('admin123'), role='admin', is_active=1))
+db.add(User(username='admin', email='admin@hachimi.com',
+            password=hash_password('adminpassword123'), role='admin', is_active=1))
 db.commit()
 print('Admin created!')
 db.close()
 "
 ```
+
+---
+
+## Hướng dẫn chạy Frontend (React + Vite)
+
+Frontend được phát triển bằng React 18, Vite, TailwindCSS và ThreeJS (cho biểu đồ 3D).
+
+### Bước 1: Di chuyển vào thư mục Frontend
+```bash
+cd hachimi-frontend
+```
+
+### Bước 2: Cài đặt thư viện
+```bash
+npm install
+```
+*(Lưu ý: `package.json` đã cấu hình sẵn toàn bộ các thư viện cần thiết như UI, `react-force-graph-3d`, `three`, Tailwind và Axios. Do đó, chỉ cần lệnh trên là đủ).*
+
+### Bước 3: Khởi chạy ứng dụng
+```bash
+npm run dev
+```
+Frontend sẽ tự động kết nối với Backend. Mở trình duyệt: http://localhost:5173
+
+---
+
+## Ghi chú về Thư viện Backend (Dependencies)
+
+Trong quá trình hoàn thiện hệ thống, các tính năng bảo mật Auth/OAuth và AI Model đã được bổ sung. Các thư viện quan trọng đi kèm bao gồm:
+- **Core & Database:** `fastapi`, `uvicorn`, `psycopg2-binary`, `SQLAlchemy`
+- **Security & JWT:** `passlib`, `bcrypt`, `python-jose`, `python-multipart`
+- **OAuth & Requests:** `httpx`
+- **AI/ML:** `torch`, `scikit-learn`, `pandas`
+
+Toàn bộ đã được khai báo chuẩn trong `requirements.txt`. Script `setup.bat` (hoặc lệnh `pip install -r requirements.txt`) sẽ tự động tải đầy đủ, người dùng không cần cài lẻ tẻ bằng tay.
 
 ---
 
