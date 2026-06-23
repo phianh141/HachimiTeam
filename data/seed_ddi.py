@@ -1,4 +1,4 @@
-"""Import drug-drug interaction data from TWOSIDES into PostgreSQL."""
+"""Import drug-drug interaction data from Drug-Drug Interactions into PostgreSQL."""
 
 import os
 import sys
@@ -17,7 +17,7 @@ DDI_DATASET_PATH = PROJECT_ROOT / "data/raw/drug vs drug/db_drug_interactions.cs
 
 BATCH_SIZE = 100
 PROGRESS_INTERVAL = 1000
-SOURCE = "TWOSIDES"
+SOURCE = "Drug-Drug Interactions"
 
 
 def load_ddi_dataset() -> pd.DataFrame:
