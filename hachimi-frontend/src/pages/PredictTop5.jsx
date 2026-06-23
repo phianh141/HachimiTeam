@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import NetworkGraph from '../components/NetworkGraph';
+import D3NetworkChart from '../components/D3NetworkChart';
 
 // ==========================================
 // 1. CÁC COMPONENT ĐƯỢC TÁCH NHỎ
@@ -322,7 +323,7 @@ const PredictTop5 = () => {
 
                 <div className="bg-white border border-slate-200 rounded-3xl p-6 lg:p-8 shadow-sm hover:shadow-md transition-shadow flex flex-col sm:flex-row items-center sm:items-start gap-6 lg:gap-8">
                   <div className="w-28 h-28 lg:w-32 lg:h-32 shrink-0 bg-slate-50 flex items-center justify-center rounded-2xl overflow-hidden border border-slate-100">
-                    <img alt="Chart" className="w-full h-full object-cover" src="/bảng dữ liệu.jpg" />
+                    <D3NetworkChart diseaseName={results.disease_name} topDrugs={results.top_drugs} />
                   </div>
                   <div className="text-center sm:text-left">
                     <h3 className="font-bold text-slate-900 text-2xl mb-2">Bảng dữ liệu phân tích</h3>
